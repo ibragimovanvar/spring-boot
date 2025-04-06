@@ -41,33 +41,6 @@ This is a Spring Boot application developed as part of an EPAM training module. 
 - **PostgreSQL**: Database
 - **Maven**: Build tool
 
-## Project Structure
-spring-boot-epam/
-├── src/
-│   ├── main/
-│   │   ├── java/com/epam/training/spring_boot_epam/
-│   │   │   ├── controller/       # REST controllers (e.g., TraineeController, TrainingController)
-│   │   │   ├── service/          # Service interfaces and implementations
-│   │   │   ├── repository/       # DAO interfaces for JPA
-│   │   │   ├── domain/           # Entity classes (e.g., Trainee, Trainer, Training)
-│   │   │   ├── dto/              # Data Transfer Objects (e.g., TrainingDTO, TraineeDTO)
-│   │   │   ├── exception/        # Custom exceptions (e.g., DomainException)
-│   │   │   ├── mapper/           # Mappers for converting entities to DTOs
-│   │   │   ├── health/           # Custom health indicators
-│   │   │   ├── metrics/          # Custom Prometheus metrics
-│   │   │   └── SpringBootEpamApplication.java  # Main application class
-│   │   └── resources/
-│   │       ├── application.yml            # Base configuration
-│   │       ├── application-dev.yml        # Dev profile config
-│   │       ├── application-pre-prod.yml   # Pre-prod profile config
-│   │       ├── application-prod.yml       # Prod profile config
-│   │       └── import/initial.sql         # Initial DB setup script
-│   └── test/
-│       └── java/com/epam/training/spring_boot_epam/  # Unit tests
-├── pom.xml
-└── README.md
-
-
 ## Setup
 
 ### Prerequisites
