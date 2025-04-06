@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'spring-boot-epam'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8080', 'localhost:8081', 'localhost:8082']

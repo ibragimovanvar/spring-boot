@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: spring-boot-epam
+  profiles:
+    active: dev
+  jpa:
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: create
+          import_files: classpath:import/initial.sql
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+        format_sql: true
+  mvc:
+    servlet:
+      path: /api
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, metrics, info  # Expose health and prometheus endpoints
+      base-path: /actuator         # Default path, customize if needed
+  endpoint:
+    health:
+      show-details: always
