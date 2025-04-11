@@ -1,8 +1,6 @@
 package com.epam.training.spring_boot_epam.controller;
 
 import com.epam.training.spring_boot_epam.dto.TrainingDTO;
-import com.epam.training.spring_boot_epam.dto.filters.TraineeTrainingsFilter;
-import com.epam.training.spring_boot_epam.dto.filters.TrainerTrainingsFilter;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
 import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
@@ -18,8 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,7 +43,7 @@ class TrainingControllerTests {
         trainingDTO.setTrainerUsername("jane_smith");
         trainingDTO.setTrainingName("Morning Yoga");
         trainingDTO.setTrainingDateTime(LocalDateTime.of(2023, 10, 1, 9, 0));
-        trainingDTO.setTrainingDurationInHours(1);
+        trainingDTO.setTrainingDurationInMinutes(1);
 
         TraineeFilterResponseDTO traineeResponseDTO = new TraineeFilterResponseDTO();
         traineeResponseDTO.setId(1L);

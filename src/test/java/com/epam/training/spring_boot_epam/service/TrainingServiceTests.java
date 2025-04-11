@@ -6,11 +6,7 @@ import com.epam.training.spring_boot_epam.domain.Training;
 import com.epam.training.spring_boot_epam.domain.TrainingType;
 import com.epam.training.spring_boot_epam.domain.User;
 import com.epam.training.spring_boot_epam.dto.TrainingDTO;
-import com.epam.training.spring_boot_epam.dto.filters.TraineeTrainingsFilter;
-import com.epam.training.spring_boot_epam.dto.filters.TrainerTrainingsFilter;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
-import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
-import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
 import com.epam.training.spring_boot_epam.mapper.TrainingMapper;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
 import com.epam.training.spring_boot_epam.repository.TrainerDao;
@@ -25,8 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -160,7 +154,7 @@ class TrainingServiceTests {
         dto.setTrainerUsername("jane_smith");
         dto.setTrainingName("Morning Yoga");
         dto.setTrainingDateTime(LocalDateTime.of(2023, 10, 1, 9, 0));
-        dto.setTrainingDurationInHours(1);
+        dto.setTrainingDurationInMinutes(1);
 
         when(trainingMapper.toEntity(dto)).thenReturn(training);
         when(traineeService.getByUsername("john_doe")).thenReturn(trainee);

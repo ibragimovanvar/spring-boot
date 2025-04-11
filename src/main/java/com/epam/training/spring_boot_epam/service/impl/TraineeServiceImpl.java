@@ -138,10 +138,10 @@ public class TraineeServiceImpl implements TraineeService {
             throw new DomainException("Trainee not found: " + request.getUsername());
         }
 
-        traineeDao.findByUsername(request.getUsername()).ifPresent(trainee -> {
-            trainee.getUser().setActive(request.getActive());
-            traineeDao.update(trainee);
-        });
+        Trainee trainee = traineeDao.findByUsername(request.getUsername()).orElseThrow(() -> new DomainException("Trainee not found: " + request.getUsername()));
+
+        trainee.getUser().setActive(request.getActive());
+        traineeDao.update(trainee);
 
         return new ApiResponse<>(true, null, null);
     }

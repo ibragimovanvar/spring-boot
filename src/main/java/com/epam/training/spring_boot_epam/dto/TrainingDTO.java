@@ -30,5 +30,5 @@ public class TrainingDTO {
     private LocalDateTime trainingDateTime;
 
     @NotNull(message = "Please enter training duration(minutes)")
-    private Integer trainingDurationInHours;
+    private Integer trainingDurationInMinutes;
 }

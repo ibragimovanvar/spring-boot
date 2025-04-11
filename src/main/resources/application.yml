@@ -24,8 +24,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, prometheus, metrics, info  # Expose health and prometheus endpoints
-      base-path: /actuator         # Default path, customize if needed
+        include: health, prometheus, metrics, info
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
