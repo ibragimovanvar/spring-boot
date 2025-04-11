@@ -64,20 +64,20 @@ class TrainingControllerTests {
 
     @Test
     void getTraineeTrainings_WhenInvalid_ShouldReturn_4xxClientError() throws Exception {
-        mockMvc.perform(get("/v1/trainings/trainee-trainings")
+        mockMvc.perform(get("/v1/trainees/{username}/trainings")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Missing header: username"));
+                .andExpect(jsonPath("$.message").value("Missing username"));
     }
 
     @Test
     void getTrainerTrainings_WhenInvalid_ShouldReturn_4xxClientError() throws Exception {
-        mockMvc.perform(get("/v1/trainings/trainer-trainings")
+        mockMvc.perform(get("/v1/trainers/{username}/trainings")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Missing header: username"));
+                .andExpect(jsonPath("$.message").value("Missing username"));
     }
 
 

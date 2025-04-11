@@ -127,7 +127,7 @@ class TrainerControllerTests {
         ApiResponse<Void> response = new ApiResponse<>(true, null, null);
         when(trainerService.deleteProfile("jane_smith")).thenReturn(response);
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/v1/trainers/1")
+        mockMvc.perform(MockMvcRequestBuilders.delete("/v1/trainers")
                         .header("username", "jane_smith")
                         .header("password", "password123")
                         .param("username", "jane_smith"))

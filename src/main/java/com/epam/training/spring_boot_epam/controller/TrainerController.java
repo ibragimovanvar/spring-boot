@@ -53,7 +53,7 @@ public class TrainerController {
     @GetMapping("/{username}/trainings")
     public ResponseEntity<ApiResponse<List<TrainerFilterResponseDTO>>> getTrainerTrainings(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @PathVariable String username, @Valid @RequestBody TrainerTrainingsFilter filter){
         if(username == null || username.isBlank()){
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ApiResponse<>(false, "Missing username", null), HttpStatus.BAD_REQUEST);
         }
 
         filter.setUsername(username);
