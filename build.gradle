@@ -23,23 +23,29 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    mapstructVersion = '1.5.5.Final'
+    openapiVersion = '2.5.0'
+}
+
 dependencies {
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
-    implementation group: "org.springframework.boot", name: 'spring-boot-starter-validation'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-validation'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web'
-    implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.5.0'
-    implementation group: 'org.mapstruct', name: 'mapstruct', version: '1.5.5.Final'
+    testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test'
+
+    implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: openapiVersion
+
+    implementation group: 'org.mapstruct', name: 'mapstruct', version: mapstructVersion
+    annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: mapstructVersion
 
     compileOnly group: 'org.projectlombok', name: 'lombok'
+    annotationProcessor group: 'org.projectlombok', name: 'lombok'
 
     runtimeOnly group: 'io.micrometer', name: 'micrometer-registry-prometheus'
     runtimeOnly group: 'org.postgresql', name: 'postgresql'
 
-    annotationProcessor group: 'org.projectlombok', name: 'lombok'
-    annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: '1.5.5.Final'
-
-    testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test'
     testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-launcher'
 }
 

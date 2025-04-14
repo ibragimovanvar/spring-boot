@@ -26,4 +26,44 @@ public class    TraineeTrainingsFilter {
     private String trainerFirstname;
 
     private String trainingTypeName;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public LocalDateTime getFrom() {
+        return from;
+    }
+
+    public void setFrom(LocalDateTime from) {
+        this.from = from;
+    }
+
+    public LocalDateTime getTo() {
+        return to;
+    }
+
+    public void setTo(LocalDateTime to) {
+        this.to = to;
+    }
+
+    public String getTrainerFirstname() {
+        return trainerFirstname;
+    }
+
+    public void setTrainerFirstname(String trainerFirstname) {
+        this.trainerFirstname = trainerFirstname;
+    }
+
+    public String getTrainingTypeName() {
+        return trainingTypeName;
+    }
+
+    public void setTrainingTypeName(String trainingTypeName) {
+        this.trainingTypeName = trainingTypeName;
+    }
 }

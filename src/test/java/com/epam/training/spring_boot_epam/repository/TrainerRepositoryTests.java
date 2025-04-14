@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import(TrainerDaoImpl.class)
@@ -53,6 +53,27 @@ class TrainerRepositoryTests {
 
         Optional<Trainer> found = trainerDao.findById(trainer.getId());
         assertThat(found).isPresent().contains(trainer);
+    }
+
+    @Test
+    void findTrainerTrainings_ShouldFilterCorrectly() {
+        Trainer trainer = createTrainer(createUser("trainer.user"));
+        Trainee trainee1 = createTrainee(createUser("trainee1"));
+        Trainee trainee2 = createTrainee(createUser("trainee2"));
+        TrainingType type = createTrainingType("Yoga");
+
+        createTraining(trainee1, trainer, type, LocalDateTime.of(2023, 1, 1, 10, 0));
+        createTraining(trainee2, trainer, type, LocalDateTime.of(2023, 2, 1, 10, 0));
+
+        List<Training> results = trainerDao.findTrainerTrainings(
+                "trainer.user",
+                LocalDateTime.of(2023, 1, 1, 0, 0),
+                LocalDateTime.of(2023, 3, 1, 0, 0),
+                "trainee2"
+        );
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getTrainee().getUser().getUsername()).isEqualTo("trainee2");
     }
 
     @Test

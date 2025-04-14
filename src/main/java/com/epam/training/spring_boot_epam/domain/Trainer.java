@@ -49,4 +49,36 @@ public class Trainer{
     public Trainer(Long id) {
         this.id = id;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public TrainingType getSpecialization() {
+        return specialization;
+    }
+
+    public void setSpecialization(TrainingType specialization) {
+        this.specialization = specialization;
+    }
+
+    public List<Training> getTrainings() {
+        return trainings;
+    }
+
+    public void setTrainings(List<Training> trainings) {
+        this.trainings = trainings;
+    }
 }

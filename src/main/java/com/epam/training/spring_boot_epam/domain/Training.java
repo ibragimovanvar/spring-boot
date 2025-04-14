@@ -57,12 +57,4 @@ public class Training {
         this.id = id;
     }
 
-    public Training(Trainer trainer, Trainee trainee, String trainingName, TrainingType trainingType, LocalDateTime trainingDateTime, int trainingDurationInHours) {
-        this.trainer = trainer;
-        this.trainee = trainee;
-        this.trainingName = trainingName;
-        this.trainingType = trainingType;
-        this.trainingDateTime = trainingDateTime;
-        this.trainingDurationInHours = trainingDurationInHours;
-    }
 }

@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,12 +33,7 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
 
     @Override
     public TrainingType getTrainingType(Long id) {
-        Optional<TrainingType> optionalTrainingType = trainingTypeDao.findById(id);
-
-        if(optionalTrainingType.isEmpty()){
-            throw new DomainException("Training type not found");
-        }
-
-        return optionalTrainingType.get();
+        return trainingTypeDao.findById(id)
+                .orElseThrow(() -> new DomainException("Training type not found"));
     }
 }

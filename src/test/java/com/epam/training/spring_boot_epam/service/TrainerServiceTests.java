@@ -1,6 +1,5 @@
 package com.epam.training.spring_boot_epam.service;
 
-import com.epam.training.spring_boot_epam.domain.Trainee;
 import com.epam.training.spring_boot_epam.domain.Trainer;
 import com.epam.training.spring_boot_epam.domain.Training;
 import com.epam.training.spring_boot_epam.domain.TrainingType;
@@ -19,22 +18,23 @@ import com.epam.training.spring_boot_epam.service.impl.TrainerServiceImpl;
 import com.epam.training.spring_boot_epam.util.DomainUtils;
 import com.epam.training.spring_boot_epam.util.OperationTypes;
 import com.epam.training.spring_boot_epam.util.StatusTypes;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyString;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerServiceTests {
@@ -182,7 +182,7 @@ class TrainerServiceTests {
 
         TrainerDTO dto = new TrainerDTO();
         DomainException exception = assertThrows(DomainException.class, () -> trainerService.updateProfile(dto, 1L));
-        assertThat(exception.getMessage()).isEqualTo("Trainer not found: 1");
+        assertThat(exception.getMessage()).isEqualTo("Trainer not found");
     }
 
     @Test
@@ -204,7 +204,7 @@ class TrainerServiceTests {
         when(trainerDao.findByUsername("unknown")).thenReturn(Optional.empty());
 
         DomainException exception = assertThrows(DomainException.class, () -> trainerService.deleteProfile("unknown"));
-        assertThat(exception.getMessage()).isEqualTo("Trainer not found: unknown");
+        assertThat(exception.getMessage()).isEqualTo("Trainer not found");
     }
 
     @Test
@@ -226,7 +226,7 @@ class TrainerServiceTests {
         when(trainerDao.findByUsername("unknown")).thenReturn(Optional.empty());
 
         DomainException exception = assertThrows(DomainException.class, () -> trainerService.activateOrDeactivate(request));
-        assertThat(exception.getMessage()).isEqualTo("Trainer not found: unknown");
+        assertThat(exception.getMessage()).isEqualTo("Trainer not found");
     }
 
     @Test

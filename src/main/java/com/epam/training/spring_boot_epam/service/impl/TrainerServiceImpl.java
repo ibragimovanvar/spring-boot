@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -108,12 +107,10 @@ public class TrainerServiceImpl implements TrainerService {
     public ApiResponse<TrainerDTO> updateProfile(TrainerDTO dto, Long id) {
         LOGGER.info("Request to update {} profile: {}", ENTITY_NAME, dto);
 
-        Optional<Trainer> optionalTrainer = trainerDao.findById(id);
+        Trainer trainer = trainerDao
+                .findById(id)
+                .orElseThrow(() -> new DomainException("Trainer not found"));
 
-        if(optionalTrainer.isEmpty()){
-            throw new DomainException("Trainer not found: " + id);
-        }
-        Trainer trainer = optionalTrainer.get();
         trainer.getUser().setFirstName(dto.getFirstName());
         trainer.getUser().setLastName(dto.getLastName());
         trainer.getUser().setActive(dto.getActive());
@@ -144,12 +141,9 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public ApiResponse<Void> deleteProfile(String username) {
-        Optional<Trainer> optionalTrainer = trainerDao.findByUsername(username);
+        Trainer trainer = trainerDao.findByUsername(username)
+                .orElseThrow(() -> new DomainException("Trainer not found"));
 
-        if(optionalTrainer.isEmpty()){
-            throw new DomainException("Trainer not found: " + username);
-        }
-        Trainer trainer = optionalTrainer.get();
         trainer.getUser().setActive(false);
         trainerDao.update(trainer);
 
@@ -158,13 +152,9 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public ApiResponse<Void> activateOrDeactivate(ActivateDeactiveRequest request) {
-        Optional<Trainer> optionalTrainer = trainerDao.findByUsername(request.getUsername());
+        Trainer trainer = trainerDao.findByUsername(request.getUsername())
+                .orElseThrow(() -> new DomainException("Trainer not found"));
 
-        if(optionalTrainer.isEmpty()){
-            throw new DomainException("Trainer not found: " + request.getUsername());
-        }
-
-        Trainer trainer = optionalTrainer.get();
         trainer.getUser().setActive(!trainer.getUser().getActive());
         trainerDao.update(trainer);
 

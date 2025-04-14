@@ -1,16 +1,18 @@
 package com.epam.training.spring_boot_epam.repository;
 
-import com.epam.training.spring_boot_epam.domain.*;
+import com.epam.training.spring_boot_epam.domain.Trainee;
+import com.epam.training.spring_boot_epam.domain.Trainer;
+import com.epam.training.spring_boot_epam.domain.Training;
+import com.epam.training.spring_boot_epam.domain.TrainingType;
+import com.epam.training.spring_boot_epam.domain.User;
 import com.epam.training.spring_boot_epam.repository.impl.TraineeDaoImpl;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.util.List;

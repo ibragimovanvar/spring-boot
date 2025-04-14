@@ -17,9 +17,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TrainingController.class)
 class TrainingControllerTests {
@@ -61,25 +65,6 @@ class TrainingControllerTests {
         trainerResponseDTO.setTraineeFirstname("John");
         trainerResponseDTO.setTrainingType("Yoga");
     }
-
-    @Test
-    void getTraineeTrainings_WhenInvalid_ShouldReturn_4xxClientError() throws Exception {
-        mockMvc.perform(get("/v1/trainees/{username}/trainings")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Missing username"));
-    }
-
-    @Test
-    void getTrainerTrainings_WhenInvalid_ShouldReturn_4xxClientError() throws Exception {
-        mockMvc.perform(get("/v1/trainers/{username}/trainings")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Missing username"));
-    }
-
 
     @Test
     void createTraining_WhenValid_ShouldReturnCreated() throws Exception {

@@ -22,5 +22,4 @@ public interface TrainerMapper {
     @Mapping(source = "specialization.id", target = "trainingTypeId")
     GetTraineeTrainerDTO toGetTraineeTrainerDto(Trainer trainee);
 
-    Trainer toEntity(TrainerDTO dto);
 }

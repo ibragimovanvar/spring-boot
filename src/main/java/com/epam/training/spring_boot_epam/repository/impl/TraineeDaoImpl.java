@@ -1,6 +1,10 @@
 package com.epam.training.spring_boot_epam.repository.impl;
 
-import com.epam.training.spring_boot_epam.domain.*;
+import com.epam.training.spring_boot_epam.domain.TrainingType;
+import com.epam.training.spring_boot_epam.domain.Trainer;
+import com.epam.training.spring_boot_epam.domain.Training;
+import com.epam.training.spring_boot_epam.domain.Trainee;
+import com.epam.training.spring_boot_epam.domain.User;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;

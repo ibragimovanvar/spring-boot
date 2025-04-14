@@ -1,13 +1,15 @@
 package com.epam.training.spring_boot_epam.controller;
 
-import com.epam.training.spring_boot_epam.controller.TrainerController;
 import com.epam.training.spring_boot_epam.dto.TrainerDTO;
+import com.epam.training.spring_boot_epam.dto.filters.TrainerTrainingsFilter;
 import com.epam.training.spring_boot_epam.dto.request.ActivateDeactiveRequest;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
 import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.service.TrainerService;
+import com.epam.training.spring_boot_epam.service.TrainingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,8 +20,19 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import java.util.List;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TrainerController.class)
 class TrainerControllerTests {
@@ -29,6 +42,9 @@ class TrainerControllerTests {
 
     @MockBean
     private TrainerService trainerService;
+
+    @MockBean
+    private TrainingService trainingService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -49,6 +65,32 @@ class TrainerControllerTests {
         trainerDTO.setTrainingTypeId(1L);
         authDTO = new AuthDTO("jane_smith", "password123");
         activateDeactiveRequest = new ActivateDeactiveRequest("jane_smith", true);
+    }
+
+    @Test
+    void getTrainerTrainings_WhenValid_ShouldReturnOk() throws Exception {
+        TrainerTrainingsFilter filter = new TrainerTrainingsFilter();
+
+        TrainerFilterResponseDTO responseDTO = new TrainerFilterResponseDTO();
+        responseDTO.setId(1L);
+        responseDTO.setTrainingName("Morning Yoga");
+        responseDTO.setTraineeFirstname("John");
+        responseDTO.setTrainingType("Yoga");
+
+        ApiResponse<List<TrainerFilterResponseDTO>> response =
+                new ApiResponse<>(true, null, List.of(responseDTO));
+
+        when(trainingService.getTrainerTrainings(eq("jane_smith"), eq("password123"), any(TrainerTrainingsFilter.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith/trainings")
+                        .header("username", "jane_smith")
+                        .header("password", "password123")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(filter)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].trainingName").value("Morning Yoga"));
     }
 
     @Test
@@ -73,10 +115,9 @@ class TrainerControllerTests {
         ApiResponse<TrainerDTO> response = new ApiResponse<>(true, null, trainerDTO);
         when(trainerService.getProfile("jane_smith")).thenReturn(response);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/by-username")
+        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith")
                         .header("username", "jane_smith")
-                        .header("password", "password123")
-                        .param("username", "jane_smith"))
+                        .header("password", "password123"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -92,10 +133,9 @@ class TrainerControllerTests {
         doThrow(new DomainException("Invalid username or password")).when(trainerService)
                 .checkAuthProfile("jane_smith", "wrongpassword", "jane_smith");
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/by-username")
+        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith")
                         .header("username", "jane_smith")
-                        .header("password", "wrongpassword")
-                        .param("username", "jane_smith"))
+                        .header("password", "wrongpassword"))
                 .andExpect(status().is4xxClientError());
 
         verify(trainerService, times(1)).checkAuthProfile("jane_smith", "wrongpassword", "jane_smith");

@@ -13,5 +13,4 @@ public interface TraineeMapper {
     @Mapping(source = "user.active", target = "active")
     TraineeDTO toDto(Trainee trainee);
 
-    Trainee toEntity(TraineeDTO dto);
 }
