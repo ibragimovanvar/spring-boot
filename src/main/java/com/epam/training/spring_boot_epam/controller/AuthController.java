@@ -1,20 +1,21 @@
 package com.epam.training.spring_boot_epam.controller;
 
-import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
+import com.epam.training.spring_boot_epam.dto.request.AuthLoginRequest;
 import com.epam.training.spring_boot_epam.dto.request.PasswordChangeRequest;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import com.epam.training.spring_boot_epam.dto.response.TokenResponse;
+import com.epam.training.spring_boot_epam.exception.TooManyRequestsException;
 import com.epam.training.spring_boot_epam.repository.UserDao;
+import com.epam.training.spring_boot_epam.security.service.AuthService;
+import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,22 +23,27 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class AuthController {
 
     private final UserDao userDao;
+    private final AuthService authService;
+    private final RateLimiter rateLimiter;
 
     @Operation(summary = "Login endpoint", description = "Returns a login token")
-    @GetMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody AuthDTO authDTO) {
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setData(null);
-
-        if (userDao.existsByUsernameAndPassword(authDTO.getUsername(), authDTO.getPassword())) {
-            apiResponse.setMessage("Login Successful");
-            apiResponse.setSuccess(true);
-            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody AuthLoginRequest authDTO) {
+        if (!rateLimiter.acquirePermission()) {
+            throw new TooManyRequestsException("Juda ko'p so'rov yubordingiz, 5 daqiqadan keyuin urinib ko'ring !");
         }
 
-        apiResponse.setMessage("Login or password wrong!");
-        apiResponse.setSuccess(false);
-        return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(authService.login(authDTO), HttpStatus.OK);
+    }
+
+    @Operation(summary = "Logout endpoint")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestHeader("Authorization") String token) {
+        ApiResponse<Void> apiResponse = authService.logout(token.substring(7));
+
+        SecurityContextHolder.clearContext();
+
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
 
     @PutMapping("/change-password")

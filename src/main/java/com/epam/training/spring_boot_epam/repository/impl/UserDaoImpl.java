@@ -2,6 +2,8 @@ package com.epam.training.spring_boot_epam.repository.impl;
 
 import com.epam.training.spring_boot_epam.domain.User;
 import com.epam.training.spring_boot_epam.repository.UserDao;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,9 +13,11 @@ import java.util.Optional;
 
 @Repository
 @Transactional
+@RequiredArgsConstructor
 public class UserDaoImpl implements UserDao {
     @PersistenceContext
     private EntityManager em;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Optional<User> findByUsername(String username) {
@@ -21,6 +25,16 @@ public class UserDaoImpl implements UserDao {
                 .setParameter("username", username)
                 .getResultStream()
                 .findFirst();
+    }
+
+    @Override
+    public User save(User user) {
+        if (user.getId() == null) {
+            em.persist(user);
+        } else {
+            em.merge(user);
+        }
+        return user;
     }
 
     @Override
@@ -48,6 +62,9 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public boolean updatePassword(String username, String oldPassword, String newPassword) {
+        oldPassword = passwordEncoder.encode(oldPassword);
+        newPassword = passwordEncoder.encode(newPassword);
+
         if (!existsByUsernameAndPassword(username, oldPassword)) {
             return false;
         }

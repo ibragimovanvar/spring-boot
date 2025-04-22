@@ -2,16 +2,19 @@ package com.epam.training.spring_boot_epam.exception.handler;
 
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.TooManyRequestsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.AuthenticationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +26,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDomainException(DomainException ex) {
         ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(value = HttpStatus.TOO_MANY_REQUESTS)
+    public ResponseEntity<ApiResponse<Void>> handleTooManyRequestsException(TooManyRequestsException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
@@ -49,7 +59,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ignoredEx) {
         ApiResponse<Void> response = new ApiResponse<>();
         response.setSuccess(false);
         response.setMessage("Request body is missing or malformed ");
@@ -67,5 +77,41 @@ public class GlobalExceptionHandler {
         response.setData(null);
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Invalid username or password", null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDisabledException(DisabledException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Account is disabled", null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLockedException(LockedException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Account is locked", null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AccountExpiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountExpiredException(AccountExpiredException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Account has expired", null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(CredentialsExpiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCredentialsExpiredException(CredentialsExpiredException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Password has expired", null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, "Authentication failed: " + ex.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 }

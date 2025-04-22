@@ -20,6 +20,7 @@ import com.epam.training.spring_boot_epam.service.TraineeService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,18 +38,21 @@ public class TraineeServiceImpl implements TraineeService {
     private final TraineeMapper traineeMapper;
     private final UserDao userDao;
     private final TrainerMapper trainerMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = false)
     public ApiResponse<AuthDTO> createProfile(TraineeCreateDTO dto) {
         LOGGER.info("Request to create {} profile with data: {}", ENTITY_NAME, dto);
 
+        String generatedPassword = generatePassword();
+
         Trainee trainee = new Trainee(new User(dto.getFirstName(), dto.getLastName(), true), dto.getBirthDate(), dto.getAddress());
         trainee.getUser().setUsername(generateUsername(dto.getFirstName(), dto.getLastName()));
-        trainee.getUser().setPassword(generatePassword());
+        trainee.getUser().setPassword(passwordEncoder.encode(generatedPassword));
 
         Trainee result = traineeDao.save(trainee);
-        AuthDTO response = new AuthDTO(result.getUser().getUsername(), result.getUser().getPassword());
+        AuthDTO response = new AuthDTO(result.getUser().getUsername(), generatedPassword);
         return new ApiResponse<>(true, null, response);
     }
 

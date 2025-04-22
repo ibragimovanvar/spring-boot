@@ -10,6 +10,7 @@ import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
 import com.epam.training.spring_boot_epam.service.TraineeService;
 import com.epam.training.spring_boot_epam.service.TrainingService;
+import com.epam.training.spring_boot_epam.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -36,6 +36,7 @@ public class TraineeController {
 
     private final TraineeService traineeService;
     private final TrainingService trainingService;
+    private final DomainUtils domainUtils;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AuthDTO>> createTrainer(@Valid @RequestBody TraineeCreateDTO createDTO) {
@@ -44,52 +45,50 @@ public class TraineeController {
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<ApiResponse<TraineeDTO>> getTraineeByUsername(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @PathVariable String username) {
-        traineeService.checkAuthProfile(headerUsername, password, username);
-
+    public ResponseEntity<ApiResponse<TraineeDTO>> getTraineeByUsername(@PathVariable String username) {
         ApiResponse<TraineeDTO> response = traineeService.getProfile(username);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/{username}/trainings")
-    public ResponseEntity<ApiResponse<List<TraineeFilterResponseDTO>>> getTraineeTrainings(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @PathVariable String username, @Valid @RequestBody TraineeTrainingsFilter filter){
+    public ResponseEntity<ApiResponse<List<TraineeFilterResponseDTO>>> getTraineeTrainings(@PathVariable String username, @Valid @RequestBody TraineeTrainingsFilter filter){
         if(username == null || username.isBlank()){
             return new ResponseEntity<>(new ApiResponse<>(false, "Missing username", null), HttpStatus.BAD_REQUEST);
         }
 
         filter.setUsername(username);
-        ApiResponse<List<TraineeFilterResponseDTO>> response = trainingService.getTraineeTrainings(headerUsername, password, filter);
+        ApiResponse<List<TraineeFilterResponseDTO>> response = trainingService.getTraineeTrainings(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), filter);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TraineeDTO>> updateTrainee(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @Valid @RequestBody TraineeDTO traineeDTO, @PathVariable Long id) {
-        traineeService.checkAuthProfile(headerUsername, password, id);
+    public ResponseEntity<ApiResponse<TraineeDTO>> updateTrainee(@Valid @RequestBody TraineeDTO traineeDTO, @PathVariable Long id) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), id);
 
         ApiResponse<TraineeDTO> response = traineeService.updateProfile(traineeDTO, id);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<ApiResponse<Void>> deleteTrainee(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @RequestParam String username) {
-        traineeService.checkAuthProfile(headerUsername, password, username);
+    public ResponseEntity<ApiResponse<Void>> deleteTrainee(@RequestParam String username) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), username);
 
         ApiResponse<Void> response = traineeService.deleteTraineeProfile(username);
         return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
     }
 
     @PatchMapping
-    public ResponseEntity<ApiResponse<Void>> activateOrDeactivate(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @Valid @RequestBody ActivateDeactiveRequest request) {
-        traineeService.checkAuthProfile(headerUsername, password, request.getUsername());
+    public ResponseEntity<ApiResponse<Void>> activateOrDeactivate(@Valid @RequestBody ActivateDeactiveRequest request) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), request.getUsername());
 
         ApiResponse<Void> response = traineeService.activateOrDeactivate(request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/not-assigned")
-    public ResponseEntity<ApiResponse<List<TrainerDTO>>> getNotAssignedActiveTrainers(@RequestHeader(value = "username") String headerUsername, @RequestHeader(value = "password") String password, @RequestParam String username) {
-        traineeService.checkAuthProfile(headerUsername, password, username);
+    public ResponseEntity<ApiResponse<List<TrainerDTO>>> getNotAssignedActiveTrainers(@RequestParam String username) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), username);
 
         ApiResponse<List<TrainerDTO>> response = traineeService.getNotAssignedActiveTrainers(username);
         return new ResponseEntity<>(response, HttpStatus.OK);

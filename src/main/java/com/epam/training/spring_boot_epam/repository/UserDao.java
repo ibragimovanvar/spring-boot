@@ -8,6 +8,7 @@ import java.util.Optional;
 @Repository
 public interface UserDao {
     Optional<User> findByUsername(String username);
+    User save(User user);
     boolean existsByUsernameAndPassword(String username, String password);
     boolean existsByUsername(String username);
     boolean updatePassword(String username, String oldPassword, String newPassword);
