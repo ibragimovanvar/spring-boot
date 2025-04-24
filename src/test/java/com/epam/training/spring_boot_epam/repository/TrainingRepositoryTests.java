@@ -75,14 +75,14 @@ class TrainingRepositoryTests {
     void update_ShouldModifyTrainingDetails() {
         Training training = createTraining("Initial Training");
         trainingDao.save(training);
-        training.setTrainingDurationInHours(2);
+        training.setTrainingDurationInMinutes(2);
 
         trainingDao.update(training);
         entityManager.flush();
         entityManager.clear();
 
         Training updated = entityManager.find(Training.class, training.getId());
-        assertThat(updated.getTrainingDurationInHours()).isEqualTo(2);
+        assertThat(updated.getTrainingDurationInMinutes()).isEqualTo(2);
     }
 
     @Test
@@ -120,7 +120,7 @@ class TrainingRepositoryTests {
         training.setTrainee(trainee);
         training.setTrainingType(type);
         training.setTrainingDateTime(LocalDateTime.now());
-        training.setTrainingDurationInHours(1);
+        training.setTrainingDurationInMinutes(1);
         return training;
     }
 

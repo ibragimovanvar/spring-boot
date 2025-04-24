@@ -6,7 +6,9 @@ import com.epam.training.spring_boot_epam.dto.TrainerDTO;
 import com.epam.training.spring_boot_epam.dto.request.ActivateDeactiveRequest;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
+import com.epam.training.spring_boot_epam.dto.request.TraineeTrainersUpdate;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,4 +24,5 @@ public interface TraineeService {
     ApiResponse<Void> deleteTraineeProfile(String username);
     ApiResponse<Void> activateOrDeactivate(ActivateDeactiveRequest request);
     ApiResponse<List<TrainerDTO>> getNotAssignedActiveTrainers(String username);
+    ApiResponse<Void> updateTraineeTrainers(TraineeTrainersUpdate trainersUpdate, String username);
 }

@@ -10,6 +10,7 @@ import com.epam.training.spring_boot_epam.dto.filters.TrainerTrainingsFilter;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
 import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
+import com.epam.training.spring_boot_epam.exception.AuthorizationException;
 import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.mapper.TrainingMapper;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
@@ -19,6 +20,7 @@ import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.service.TraineeService;
 import com.epam.training.spring_boot_epam.service.TrainerService;
 import com.epam.training.spring_boot_epam.service.TrainingService;
+import com.epam.training.spring_boot_epam.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,28 +42,30 @@ public class TrainingServiceImpl implements TrainingService {
     private final TrainingMapper trainingMapper;
     private final TraineeService traineeService;
     private final TrainerService trainerService;
+    private final DomainUtils domainUtils;
 
-    public void checkAuthProfile(String headerUsername, String password, String username) {
+    public void checkAuthProfile(String username) {
         User user = getByUsername(username);
 
-        if(user.getUsername().equals(headerUsername) && user.getPassword().equals(password)) {
+        if(user.getUsername().equals(domainUtils.getCurrentUser().getUsername()) && domainUtils.getCurrentUser().getPassword().equals(user.getPassword())) {
             return;
         }
 
 
-        throw new DomainException("Invalid username or password");
+        throw new AuthorizationException("You dont have permission to access this resource");
     }
 
     private User getByUsername(String username) {
-        return userDao.findByUsername(username).orElseThrow(() -> new DomainException("Invalid username or password"));
+        return userDao.findByUsername(username).orElseThrow(() -> new DomainException("User not found with username " + username));
     }
 
     @Override
-    public ApiResponse<List<TraineeFilterResponseDTO>> getTraineeTrainings(String headerUsername, String password, TraineeTrainingsFilter filter) {
+    public ApiResponse<List<TraineeFilterResponseDTO>> getTraineeTrainings(TraineeTrainingsFilter filter) {
         LOGGER.info("Request to get trainings for trainee with username: {}", filter);
-        List<Training> traineeTrainings = traineeDao.findTraineeTrainings(filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTrainerFirstname(), filter.getTrainingTypeName());
 
-        checkAuthProfile(headerUsername, password, filter.getUsername());
+        checkAuthProfile(filter.getUsername());
+
+        List<Training> traineeTrainings = traineeDao.findTraineeTrainings(filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTrainerFirstname(), filter.getTrainingTypeName());
 
         List<TraineeFilterResponseDTO> filterResponseDTOS = traineeTrainings
                 .stream()
@@ -70,7 +74,7 @@ public class TrainingServiceImpl implements TrainingService {
                     responseDTO.setId(training.getId());
                     responseDTO.setTrainingName(training.getTrainingName());
                     responseDTO.setTrainingDateTime(training.getTrainingDateTime());
-                    responseDTO.setTrainingDurationInHours(training.getTrainingDurationInHours());
+                    responseDTO.setTrainingDurationInHours(training.getTrainingDurationInMinutes());
                     responseDTO.setTrainerFirstname(training.getTrainer().getUser().getFirstName());
                     responseDTO.setTrainingType(training.getTrainingType().getTrainingTypeName());
                     return responseDTO;
@@ -81,12 +85,11 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public ApiResponse<List<TrainerFilterResponseDTO>> getTrainerTrainings(String headerUsername, String password, TrainerTrainingsFilter filter) {
+    public ApiResponse<List<TrainerFilterResponseDTO>> getTrainerTrainings(TrainerTrainingsFilter filter) {
         LOGGER.info("Request to get trainings for trainer with username: {}", filter);
         List<Training> trainerTrainings = trainerDao.findTrainerTrainings(filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTraineeFirstname());
 
-
-        checkAuthProfile(headerUsername, password, filter.getUsername());
+        checkAuthProfile(filter.getUsername());
 
         List<TrainerFilterResponseDTO> filterResponseDTOS = trainerTrainings
                 .stream()
@@ -95,7 +98,7 @@ public class TrainingServiceImpl implements TrainingService {
                     responseDTO.setId(training.getId());
                     responseDTO.setTrainingName(training.getTrainingName());
                     responseDTO.setTrainingDateTime(training.getTrainingDateTime());
-                    responseDTO.setTrainingDurationInHours(training.getTrainingDurationInHours());
+                    responseDTO.setTrainingDurationInHours(training.getTrainingDurationInMinutes());
                     responseDTO.setTraineeFirstname(training.getTrainee().getUser().getFirstName());
                     responseDTO.setTrainingType(training.getTrainingType() != null ? training.getTrainingType().getTrainingTypeName() : "");
                     return responseDTO;
@@ -110,6 +113,8 @@ public class TrainingServiceImpl implements TrainingService {
     public ApiResponse<Void> addTraining(TrainingDTO dto) {
         LOGGER.info("Request to add training: {}", dto);
 
+        checkAuthProfile(dto.getTrainerUsername());
+
         Training training = trainingMapper.toEntity(dto);
 
 
@@ -122,18 +127,25 @@ public class TrainingServiceImpl implements TrainingService {
         training = trainingDao.save(training);
 
         if (!trainee.getTrainings().contains(training)) {
+            if(!trainee.getTrainers().contains(trainer)){
+                trainee.getTrainers().add(trainer);
+            }
             trainee.getTrainings().add(training);
             traineeDao.update(trainee);
         }
 
         if (!trainer.getTrainings().contains(training)) {
+            if (!trainer.getTrainees().contains(trainee)) {
+                trainer.getTrainees().add(trainee);
+            }
             trainer.getTrainings().add(training);
             trainerDao.update(trainer);
         }
 
+
         LOGGER.info("Training added successfully: {}", training.getId());
 
-        return new ApiResponse<>(true, null, null);
+        return new ApiResponse<>(true, "Successfully created", null);
     }
 
 

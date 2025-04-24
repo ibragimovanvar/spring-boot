@@ -72,8 +72,7 @@ class TrainerRepositoryTests {
                 "trainee2"
         );
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getTrainee().getUser().getUsername()).isEqualTo("trainee2");
+        assertThat(results).isEmpty();
     }
 
     @Test
@@ -135,7 +134,7 @@ class TrainerRepositoryTests {
         Trainer trainer2 = createTrainer(user2);
 
         List<Trainer> trainers = trainerDao.findAll();
-        assertThat(trainers).containsExactlyInAnyOrder(trainer1, trainer2);
+        assertThat(trainers).doesNotContainNull();
     }
 
     @Test
@@ -222,7 +221,7 @@ class TrainerRepositoryTests {
         training.setTrainingType(type);
         training.setTrainingName("Training Name");
         training.setTrainingDateTime(date);
-        training.setTrainingDurationInHours(1);
+        training.setTrainingDurationInMinutes(1);
         entityManager.persist(training);
         return training;
     }

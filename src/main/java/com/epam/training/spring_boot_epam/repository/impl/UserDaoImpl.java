@@ -61,13 +61,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public boolean updatePassword(String username, String oldPassword, String newPassword) {
-        oldPassword = passwordEncoder.encode(oldPassword);
-        newPassword = passwordEncoder.encode(newPassword);
-
-        if (!existsByUsernameAndPassword(username, oldPassword)) {
-            return false;
-        }
+    public boolean updatePassword(String username, String newPassword) {
 
         int updatedRows = em.createQuery("UPDATE app_users u SET u.password = :newPassword WHERE u.username = :username")
                 .setParameter("newPassword", newPassword)

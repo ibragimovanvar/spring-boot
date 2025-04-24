@@ -1,0 +1,19 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/training_epam
+    username: postgres
+    password: 123
+    driver-class-name: org.postgresql.Driver
+
+logging:
+  config: classpath:log-config/log4j2-dev.xml
+
+resilience4j.ratelimiter:
+  instances:
+    authLimit:
+      limit-for-period: 1000
+      limit-refresh-period: 1s
+      timeout-duration: 0

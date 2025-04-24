@@ -9,14 +9,17 @@ import com.epam.training.spring_boot_epam.dto.TrainerDTO;
 import com.epam.training.spring_boot_epam.dto.request.ActivateDeactiveRequest;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
+import com.epam.training.spring_boot_epam.dto.request.TraineeTrainersUpdate;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.GetTraineeTrainerDTO;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
 import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.service.TraineeService;
+import com.epam.training.spring_boot_epam.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service("traineeService")
 @RequiredArgsConstructor
@@ -39,6 +43,8 @@ public class TraineeServiceImpl implements TraineeService {
     private final UserDao userDao;
     private final TrainerMapper trainerMapper;
     private final PasswordEncoder passwordEncoder;
+    private final DomainUtils domainUtils;
+    private final TrainerServiceImpl trainerService;
 
     @Override
     @Transactional(readOnly = false)
@@ -60,11 +66,19 @@ public class TraineeServiceImpl implements TraineeService {
     public ApiResponse<TraineeDTO> getProfile(String username) {
         LOGGER.info("Request to get {} profile with username: {}", ENTITY_NAME, username);
 
+        checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), username);
+
         Trainee trainee = traineeDao.findByUsername(username)
                 .orElseThrow(() -> new DomainException("Trainee not found: " + username));
 
         TraineeDTO dto = traineeMapper.toDto(trainee);
-        dto.setTrainerList(getTraineeTrainerDTOS(trainee.getId()));
+
+        List<GetTraineeTrainerDTO> trainerDTOList = trainee.getTrainers()
+                .stream()
+                .map(trainerMapper::toGetTraineeTrainerDto)
+                .collect(Collectors.toList());
+
+        dto.setTrainerList(trainerDTOList);
 
         return new ApiResponse<>(true, null, dto);
     }
@@ -77,7 +91,7 @@ public class TraineeServiceImpl implements TraineeService {
             return;
         }
 
-        throw new DomainException("Invalid username or password");
+        throw new ForbiddenException("You dont have permission to access this trainee");
     }
 
     @Override
@@ -88,7 +102,7 @@ public class TraineeServiceImpl implements TraineeService {
             return;
         }
 
-        throw new DomainException("Invalid username or password");
+        throw new ForbiddenException("You dont have permission to access this trainee");
     }
 
     @Override
@@ -101,11 +115,9 @@ public class TraineeServiceImpl implements TraineeService {
     public ApiResponse<TraineeDTO> updateProfile(TraineeDTO dto, Long id) {
         LOGGER.info("Request to update {} profile: {}", ENTITY_NAME, dto);
 
-        if (!traineeDao.existsById(id)) {
-            throw new DomainException("Trainee not found: " + id);
-        }
+        Trainee entity = traineeDao.findById(id)
+                        .orElseThrow(() -> new DomainException("Trainee not found: " + id));
 
-        Trainee entity = traineeDao.findById(id).get();
         entity.getUser().setFirstName(dto.getFirstName());
         entity.getUser().setLastName(dto.getLastName());
         entity.getUser().setActive(dto.getActive());
@@ -173,16 +185,25 @@ public class TraineeServiceImpl implements TraineeService {
         return new ApiResponse<>(true, null, dtos);
     }
 
+    @Override
+    public ApiResponse<Void> updateTraineeTrainers(TraineeTrainersUpdate trainersUpdate, String username) {
+        Trainee trainee = getByUsername(username);
+        List<Trainer> trainers = trainersUpdate
+                .getTrainers()
+                .stream()
+                .map(trainerService::getByUsername)
+                .collect(Collectors.toList());
+
+        trainee.setTrainers(trainers);
+        traineeDao.update(trainee);
+        return new ApiResponse<>(true, null, null);
+    }
+
     public List<Training> getTraineeTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate,
                                               String trainerName, String trainingType) {
         LOGGER.info("Request to get trainings for {} with username: {}", ENTITY_NAME, username);
 
         return traineeDao.findTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
-    }
-
-    public List<Trainer> getAvailableTrainersForTrainee(String traineeUsername) {
-        LOGGER.info("Request to get available trainers for {} with username: {}", ENTITY_NAME, traineeUsername);
-        return traineeDao.findAvailableTrainersForTrainee(traineeUsername);
     }
 
     public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {

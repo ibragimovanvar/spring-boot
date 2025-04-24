@@ -1,203 +1,185 @@
 package com.epam.training.spring_boot_epam.controller;
 
-import com.epam.training.spring_boot_epam.dto.TrainerDTO;
-import com.epam.training.spring_boot_epam.dto.filters.TrainerTrainingsFilter;
-import com.epam.training.spring_boot_epam.dto.request.ActivateDeactiveRequest;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
-import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
-import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.service.TrainerService;
-import com.epam.training.spring_boot_epam.service.TrainingService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.List;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TrainerController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@DisplayName("Integration tests for TrainerController API endpoints")
+@Tag("Trainers")
 class TrainerControllerTests {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private TrainerService trainerService;
-
-    @MockBean
-    private TrainingService trainingService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private TrainerCreateDTO trainerCreateDTO;
-    private TrainerDTO trainerDTO;
-    private AuthDTO authDTO;
-    private ActivateDeactiveRequest activateDeactiveRequest;
+    private final String baseTrainerUrl = "/v1/trainers";
+    private String token;
+
+    @Autowired
+    private TrainerService trainerService;
+
+    private String username;
+    private String password;
+
 
     @BeforeEach
-    void setUp() {
-        trainerCreateDTO = new TrainerCreateDTO("Jane", "Smith", 1L);
-        trainerDTO = new TrainerDTO();
-        trainerDTO.setUsername("jane_smith");
-        trainerDTO.setFirstName("Jane");
-        trainerDTO.setLastName("Smith");
-        trainerDTO.setActive(true);
-        trainerDTO.setTrainingTypeId(1L);
-        authDTO = new AuthDTO("jane_smith", "password123");
-        activateDeactiveRequest = new ActivateDeactiveRequest("jane_smith", true);
+    void setUp() throws Exception {
+        if (username == null || password == null || token == null) {
+            ApiResponse<AuthDTO> profile = trainerService.createProfile(new TrainerCreateDTO("Test", "User", 2L));
+            this.password = profile.getData().getPassword();
+            this.username = profile.getData().getUsername();
+        }
+
+        String baseAuthUrl = "/v1/auth";
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(baseAuthUrl + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                String.format("{\"username\": \"%s\", \"password\": \"%s\"}", username, password)
+                        ))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        token = jsonNode.get("data").get("token").asText();
     }
 
     @Test
     void getTrainerTrainings_WhenValid_ShouldReturnOk() throws Exception {
-        TrainerTrainingsFilter filter = new TrainerTrainingsFilter();
-
-        TrainerFilterResponseDTO responseDTO = new TrainerFilterResponseDTO();
-        responseDTO.setId(1L);
-        responseDTO.setTrainingName("Morning Yoga");
-        responseDTO.setTraineeFirstname("John");
-        responseDTO.setTrainingType("Yoga");
-
-        ApiResponse<List<TrainerFilterResponseDTO>> response =
-                new ApiResponse<>(true, null, List.of(responseDTO));
-
-        when(trainingService.getTrainerTrainings(eq("jane_smith"), eq("password123"), any(TrainerTrainingsFilter.class)))
-                .thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith/trainings")
-                        .header("username", "jane_smith")
-                        .header("password", "password123")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(filter)))
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .get(String.format(baseTrainerUrl + "/%s/trainings", username))
+                        .header("Authorization", "Bearer " + token)
+                        .content(String.format("{\"username\": \"%s\"}", username))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data[0].trainingName").value("Morning Yoga"));
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        boolean resultSuccess = jsonNode.get("success").asBoolean();
+
+        Assertions.assertTrue(resultSuccess);
     }
 
     @Test
     void createTrainer_WhenValid_ShouldReturnCreated() throws Exception {
-        ApiResponse<AuthDTO> response = new ApiResponse<>(true, null, authDTO);
-        when(trainerService.createProfile(any(TrainerCreateDTO.class))).thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/v1/trainers")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(String.format(baseTrainerUrl))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(trainerCreateDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data.username").value("jane_smith"));
+                        .content(String.format("{\"firstName\": \"%s\", \"lastName\": \"%s\", \"trainingTypeId\": \"%s\"}", "TraineeTest", "IbragimovTest", "2")))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
 
-        verify(trainerService, times(1)).createProfile(any(TrainerCreateDTO.class));
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        String resultUsername = jsonNode.get("data").get("username").asText();
+        String resultPassword = jsonNode.get("data").get("password").asText();
+
+        Assertions.assertNotNull(resultUsername);
+        Assertions.assertNotNull(resultPassword);
     }
 
     @Test
     void getTrainerByUsername_WhenAuthenticated_ShouldReturnOk() throws Exception {
-        ApiResponse<TrainerDTO> response = new ApiResponse<>(true, null, trainerDTO);
-        when(trainerService.getProfile("jane_smith")).thenReturn(response);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .get(String.format(baseTrainerUrl + "/%s", username))
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith")
-                        .header("username", "jane_smith")
-                        .header("password", "password123"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data.username").value("jane_smith"));
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        boolean success = jsonNode.get("success").asBoolean();
 
-        verify(trainerService, times(1)).checkAuthProfile("jane_smith", "password123", "jane_smith");
-        verify(trainerService, times(1)).getProfile("jane_smith");
+        Assertions.assertTrue(success);
     }
 
     @Test
     void getTrainerByUsername_WhenNotAuthenticated_ShouldReturnUnauthorized() throws Exception {
-        doThrow(new DomainException("Invalid username or password")).when(trainerService)
-                .checkAuthProfile("jane_smith", "wrongpassword", "jane_smith");
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/trainers/jane_smith")
-                        .header("username", "jane_smith")
-                        .header("password", "wrongpassword"))
-                .andExpect(status().is4xxClientError());
-
-        verify(trainerService, times(1)).checkAuthProfile("jane_smith", "wrongpassword", "jane_smith");
-        verify(trainerService, never()).getProfile(anyString());
+        mockMvc.perform(MockMvcRequestBuilders
+                        .get(String.format(baseTrainerUrl + "/%s", username))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andReturn();
     }
 
     @Test
     void updateTrainer_WhenAuthenticated_ShouldReturnAccepted() throws Exception {
-        ApiResponse<TrainerDTO> response = new ApiResponse<>(true, null, trainerDTO);
-        when(trainerService.updateProfile(any(TrainerDTO.class), eq(1L))).thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.put("/v1/trainers/1")
-                        .header("username", "jane_smith")
-                        .header("password", "password123")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .put(String.format(baseTrainerUrl))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(trainerDTO)))
+                        .content(String.format("{\"username\": \"%s\", \"firstName\": \"%s\", \"lastName\": \"%s\", \"active\": %s, \"trainingTypeId\": \"%s\"}",
+                                username, "Updated", "IbragimovTest", true, "2")))
                 .andExpect(status().isAccepted())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data.username").value("jane_smith"));
+                .andReturn();
 
-        verify(trainerService, times(1)).checkAuthProfile("jane_smith", "password123", 1L);
-        verify(trainerService, times(1)).updateProfile(any(TrainerDTO.class), eq(1L));
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        String resultFirstName = jsonNode.get("data").get("firstName").asText();
+        String resultLastName = jsonNode.get("data").get("lastName").asText();
+        Boolean resultStatus = jsonNode.get("data").get("active").asBoolean();
+        Long resultTrainingTypeId = jsonNode.get("data").get("trainingTypeId").asLong();
+
+        Assertions.assertEquals("Updated", resultFirstName);
+        Assertions.assertEquals("IbragimovTest", resultLastName);
+        Assertions.assertEquals(true, resultStatus);
+        Assertions.assertEquals(2L, resultTrainingTypeId);
     }
 
     @Test
     void deleteTrainer_WhenAuthenticated_ShouldReturnNoContent() throws Exception {
-        ApiResponse<Void> response = new ApiResponse<>(true, null, null);
-        when(trainerService.deleteProfile("jane_smith")).thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/v1/trainers")
-                        .header("username", "jane_smith")
-                        .header("password", "password123")
-                        .param("username", "jane_smith"))
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .delete(String.format(baseTrainerUrl + "/delete"))
+                        .param("username", username)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andReturn();
 
-        verify(trainerService, times(1)).checkAuthProfile("jane_smith", "password123", "jane_smith");
-        verify(trainerService, times(1)).deleteProfile("jane_smith");
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        boolean resultSuccess = jsonNode.get("success").asBoolean();
+
+        Assertions.assertTrue(resultSuccess);
     }
 
     @Test
     void activateOrDeactivate_WhenAuthenticated_ShouldReturnOk() throws Exception {
-        ApiResponse<Void> response = new ApiResponse<>(true, null, null);
-        when(trainerService.activateOrDeactivate(any(ActivateDeactiveRequest.class))).thenReturn(response);
+        boolean active = false;
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/v1/trainers")
-                        .header("username", "jane_smith")
-                        .header("password", "password123")
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .patch(String.format(baseTrainerUrl))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(activateDeactiveRequest)))
+                        .content(String.format("{\"username\": \"%s\", \"active\": %s}", username, active)))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andReturn();
 
-        verify(trainerService, times(1)).checkAuthProfile("jane_smith", "password123", "jane_smith");
-        verify(trainerService, times(1)).activateOrDeactivate(any(ActivateDeactiveRequest.class));
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+
+        boolean resultSuccess = jsonNode.get("success").asBoolean();
+
+        Assertions.assertTrue(resultSuccess);
     }
 }

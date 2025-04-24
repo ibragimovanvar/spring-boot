@@ -1,13 +1,17 @@
 package com.epam.training.spring_boot_epam.exception.handler;
 
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import com.epam.training.spring_boot_epam.exception.AuthorizationException;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.exception.TooManyRequestsException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +19,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +32,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDomainException(DomainException ex) {
         ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AuthorizationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationException(AuthorizationException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(false, ex.getMessage(), null);
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(TooManyRequestsException.class)
@@ -57,15 +75,42 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ignoredEx) {
-        ApiResponse<Void> response = new ApiResponse<>();
-        response.setSuccess(false);
-        response.setMessage("Request body is missing or malformed ");
-        response.setData(null);
 
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(
+                false,
+                "Request method '" + ex.getMethod() + "' is not supported for this endpoint.",
+                null
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoHandlerFound(NoHandlerFoundException ex) {
+        ApiResponse<Void> response = new ApiResponse<>(
+                false,
+                "No handler found for path: " + ex.getRequestURL(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleInvalidDate(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof InvalidFormatException) {
+            InvalidFormatException ife = (InvalidFormatException) cause;
+            String fieldName = ife.getPath().get(0).getFieldName();
+
+            Map<String, String> error = new HashMap<>();
+            error.put(fieldName, "This field has invalid format");
+
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+
+        return new ResponseEntity<>("Invalid request body", HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

@@ -10,6 +10,7 @@ import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
 import com.epam.training.spring_boot_epam.repository.TrainerDao;
@@ -137,9 +138,9 @@ class TrainerServiceTests {
     void checkAuthProfile_WithUsername_WhenInvalid_ShouldThrowDomainException() {
         when(trainerDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer));
 
-        DomainException exception = assertThrows(DomainException.class,
+        ForbiddenException exception = assertThrows(ForbiddenException.class,
                 () -> trainerService.checkAuthProfile("jane_smith", "wrongpassword", "jane_smith"));
-        assertThat(exception.getMessage()).isEqualTo("Invalid username or password");
+        assertThat(exception.getMessage()).isEqualTo("You dont have permission to access this trainer");
     }
 
     @Test
@@ -155,9 +156,9 @@ class TrainerServiceTests {
     void checkAuthProfile_WithId_WhenInvalid_ShouldThrowDomainException() {
         when(trainerDao.findById(1L)).thenReturn(Optional.of(trainer));
 
-        DomainException exception = assertThrows(DomainException.class,
+        ForbiddenException exception = assertThrows(ForbiddenException.class,
                 () -> trainerService.checkAuthProfile("jane_smith", "wrongpassword", 1L));
-        assertThat(exception.getMessage()).isEqualTo("Invalid username or password");
+        assertThat(exception.getMessage()).isEqualTo("You dont have permission to access this trainer");
     }
 
     @Test

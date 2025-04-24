@@ -3,6 +3,7 @@ package com.epam.training.spring_boot_epam.dto;
 
 import com.epam.training.spring_boot_epam.dto.response.GetTraineeTrainerDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

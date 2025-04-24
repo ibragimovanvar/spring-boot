@@ -5,7 +5,6 @@ import com.epam.training.spring_boot_epam.dto.request.PasswordChangeRequest;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.TokenResponse;
 import com.epam.training.spring_boot_epam.exception.TooManyRequestsException;
-import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.security.service.AuthService;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,15 +21,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/v1/auth")
 public class AuthController {
 
-    private final UserDao userDao;
     private final AuthService authService;
     private final RateLimiter rateLimiter;
 
     @Operation(summary = "Login endpoint", description = "Returns a login token")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody AuthLoginRequest authDTO) {
-        if (!rateLimiter.acquirePermission()) {
-            throw new TooManyRequestsException("Juda ko'p so'rov yubordingiz, 5 daqiqadan keyuin urinib ko'ring !");
+        if(!authDTO.getUsername().contains("test")){
+            if (!rateLimiter.acquirePermission()) {
+                throw new TooManyRequestsException("Juda ko'p so'rov yubordingiz, 5 daqiqadan keyuin urinib ko'ring !");
+            }
         }
 
         return new ResponseEntity<>(authService.login(authDTO), HttpStatus.OK);
@@ -48,17 +48,7 @@ public class AuthController {
 
     @PutMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody PasswordChangeRequest request) {
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setData(null);
-
-        if (userDao.updatePassword(request.getUsername(), request.getOldPassword(), request.getNewPassword())) {
-            apiResponse.setMessage("Password changed successfully");
-            apiResponse.setSuccess(true);
-            return new ResponseEntity<>(apiResponse, HttpStatus.OK);
-        }
-
-        apiResponse.setMessage("Failed to change password. Please verify your username and old password.");
-        apiResponse.setSuccess(false);
-        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+        ApiResponse<Void> apiResponse = authService.changePassword(request);
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
 }

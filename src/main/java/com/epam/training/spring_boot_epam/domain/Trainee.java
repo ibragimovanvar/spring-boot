@@ -1,9 +1,6 @@
 package com.epam.training.spring_boot_epam.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -25,6 +22,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "trainees")
+@ToString
 public class Trainee {
 
     @Id
@@ -46,6 +44,7 @@ public class Trainee {
     private List<Trainer> trainers = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<Training> trainings = new ArrayList<>();
 
     public Trainee(User user, LocalDate birthDate, String address) {

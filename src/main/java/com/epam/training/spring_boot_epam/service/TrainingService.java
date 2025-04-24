@@ -12,9 +12,9 @@ import java.util.List;
 
 @Service("trainingService")
 public interface TrainingService {
-    ApiResponse<List<TraineeFilterResponseDTO>> getTraineeTrainings(String headerUsername, String password, TraineeTrainingsFilter filter);
+    ApiResponse<List<TraineeFilterResponseDTO>> getTraineeTrainings(TraineeTrainingsFilter filter);
 
-    ApiResponse<List<TrainerFilterResponseDTO>> getTrainerTrainings(String headerUsername, String password, TrainerTrainingsFilter filter);
+    ApiResponse<List<TrainerFilterResponseDTO>> getTrainerTrainings(TrainerTrainingsFilter filter);
 
     ApiResponse<Void> addTraining(TrainingDTO dto);
 }

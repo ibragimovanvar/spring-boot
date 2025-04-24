@@ -8,6 +8,7 @@ import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
 import com.epam.training.spring_boot_epam.repository.TrainerDao;
@@ -24,7 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -70,8 +70,7 @@ public class TrainerServiceImpl implements TrainerService {
             return;
         }
 
-
-        throw new DomainException("Invalid username or password");
+        throw new ForbiddenException("You dont have permission to access this trainer");
     }
 
     @Override
@@ -82,7 +81,7 @@ public class TrainerServiceImpl implements TrainerService {
             return;
         }
 
-        throw new DomainException("Invalid username or password");
+        throw new ForbiddenException("You dont have permission to access this trainer");
     }
 
     @Override
@@ -128,14 +127,6 @@ public class TrainerServiceImpl implements TrainerService {
         return new ApiResponse<>(true, null, responseDto);
     }
 
-    private String checkUsernameNotExists(@NotNull(message = "Please enter your username") String username) {
-        if(userDao.existsByUsername(username)){
-            throw new DomainException("Username already exists: " + username);
-        }
-
-        return username;
-    }
-
     @Transactional
     public List<Training> getTrainerTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate, String traineeName) {
         LOGGER.info("Request to get trainings for {} with username: {}", ENTITY_NAME, username);
@@ -164,12 +155,6 @@ public class TrainerServiceImpl implements TrainerService {
 
         return new ApiResponse<>(true, null, null);
 
-    }
-
-    private void validateRequiredFields(String firstName, String lastName, TrainingType specialization) {
-        if (firstName == null || lastName == null || specialization == null) {
-            throw new IllegalArgumentException("Required fields are missing");
-        }
     }
 
     private void requireAuthentication(String username) {

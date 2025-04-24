@@ -1,75 +1,81 @@
 package com.epam.training.spring_boot_epam.controller;
 
-import com.epam.training.spring_boot_epam.dto.TrainingTypeDTO;
+import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
+import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
-import com.epam.training.spring_boot_epam.service.TrainingTypeService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import com.epam.training.spring_boot_epam.service.TraineeService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.Collections;
-import java.util.List;
+import java.time.LocalDate;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TrainingTypeController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@DisplayName("Integration tests for TrainingTypeController API endpoints")
+@Tag("Training Types")
 class TrainingTypeControllerTests {
-
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private TrainingTypeService trainingTypeService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private TrainingTypeDTO trainingTypeDTO;
+    private String token;
+
+    @Autowired
+    private TraineeService traineeService;
+
+    private String username;
+    private String password;
 
     @BeforeEach
-    void setUp() {
-        trainingTypeDTO = new TrainingTypeDTO();
-        trainingTypeDTO.setId(1L);
-        trainingTypeDTO.setTrainingTypeName("Yoga");
+    void setUp() throws Exception {
+        if (username == null || password == null || token == null) {
+            ApiResponse<AuthDTO> profile = traineeService.createProfile(new TraineeCreateDTO("Test", "User", "123", LocalDate.now()));
+            this.password = profile.getData().getPassword();
+            this.username = profile.getData().getUsername();
+        }
+
+        String baseAuthUrl = "/v1/auth";
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(baseAuthUrl + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                String.format("{\"username\": \"%s\", \"password\": \"%s\"}", username, password)
+                        ))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        token = jsonNode.get("data").get("token").asText();
     }
 
     @Test
     void getTrainingTypes_WhenTypesExist_ShouldReturnOk() throws Exception {
-        ApiResponse<List<TrainingTypeDTO>> response = new ApiResponse<>(true, null, Collections.singletonList(trainingTypeDTO));
-        when(trainingTypeService.getTrainingTypes()).thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/training-types")
+        String baseTrainingTypesUrl = "/v1/training-types";
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .get(baseTrainingTypesUrl)
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data[0].id").value(1L))
-                .andExpect(jsonPath("$.data[0].trainingTypeName").value("Yoga"));
+                .andReturn();
 
-        verify(trainingTypeService, times(1)).getTrainingTypes();
-    }
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        boolean resultSuccess = jsonNode.get("success").asBoolean();
 
-    @Test
-    void getTrainingTypes_WhenNoTypesExist_ShouldReturnOkWithEmptyList() throws Exception {
-        ApiResponse<List<TrainingTypeDTO>> response = new ApiResponse<>(true, null, Collections.emptyList());
-        when(trainingTypeService.getTrainingTypes()).thenReturn(response);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/v1/training-types")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data").isEmpty());
-
-        verify(trainingTypeService, times(1)).getTrainingTypes();
+        Assertions.assertTrue(resultSuccess);
+        Assertions.assertNotNull(jsonNode.get("data"));
     }
 }

@@ -6,6 +6,7 @@ import com.epam.training.spring_boot_epam.dto.filters.TraineeTrainingsFilter;
 import com.epam.training.spring_boot_epam.dto.request.ActivateDeactiveRequest;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
+import com.epam.training.spring_boot_epam.dto.request.TraineeTrainersUpdate;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
 import com.epam.training.spring_boot_epam.service.TraineeService;
@@ -57,16 +58,24 @@ public class TraineeController {
         }
 
         filter.setUsername(username);
-        ApiResponse<List<TraineeFilterResponseDTO>> response = trainingService.getTraineeTrainings(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), filter);
+        ApiResponse<List<TraineeFilterResponseDTO>> response = trainingService.getTraineeTrainings(filter);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TraineeDTO>> updateTrainee(@Valid @RequestBody TraineeDTO traineeDTO, @PathVariable Long id) {
-        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), id);
+    @PutMapping("")
+    public ResponseEntity<ApiResponse<TraineeDTO>> updateTrainee(@Valid @RequestBody TraineeDTO traineeDTO) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), domainUtils.getCurrentUser().getId());
 
-        ApiResponse<TraineeDTO> response = traineeService.updateProfile(traineeDTO, id);
+        ApiResponse<TraineeDTO> response = traineeService.updateProfile(traineeDTO, domainUtils.getCurrentUser().getId());
+        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    }
+
+    @PutMapping("/{username}/trainers")
+    public ResponseEntity<ApiResponse<Void>> updateTraineeTrainers(@Valid @RequestBody TraineeTrainersUpdate trainersUpdate, @PathVariable String username) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), username);
+
+        ApiResponse<Void> response = traineeService.updateTraineeTrainers(trainersUpdate, username);
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 

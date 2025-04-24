@@ -18,8 +18,11 @@ public class Token {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "token", length = 1000)
+    @Column(name = "token", length = 1000, nullable = false, updatable = false)
     private String token;
+
+    @Column(name = "username", length = 100, nullable = false, updatable = false)
+    private String username;
 
     @Column(name = "expired")
     private Boolean expired;

@@ -57,19 +57,19 @@ public class TrainerController {
         }
 
         filter.setUsername(username);
-        ApiResponse<List<TrainerFilterResponseDTO>> response = trainingService.getTrainerTrainings(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), filter);
+        ApiResponse<List<TrainerFilterResponseDTO>> response = trainingService.getTrainerTrainings(filter);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TrainerDTO>> updateTrainer(@Valid @RequestBody TrainerDTO trainerDTO, @PathVariable Long id) {
-        trainerService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), id);
+    @PutMapping("")
+    public ResponseEntity<ApiResponse<TrainerDTO>> updateTrainer(@Valid @RequestBody TrainerDTO trainerDTO) {
+        trainerService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), domainUtils.getCurrentUser().getId());
 
-        ApiResponse<TrainerDTO> response = trainerService.updateProfile(trainerDTO, id);
+        ApiResponse<TrainerDTO> response = trainerService.updateProfile(trainerDTO, domainUtils.getCurrentUser().getId());
         return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
     }
 
-    @DeleteMapping
+    @DeleteMapping("/delete")
     public ResponseEntity<ApiResponse<Void>> deleteTrainer(@RequestParam String username) {
         trainerService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), username);
 

@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
@@ -26,9 +28,13 @@ class UserRepositoryTests {
     @Autowired
     private UserDaoImpl userDao;
 
+    @MockBean
+    private PasswordEncoder passwordEncoder;
+
+
     @Test
     void findByUsername_WhenUserExists_ShouldReturnUser() {
-        User user = createUser("test.user", "password123");
+        User user = createUser("password123");
         entityManager.persist(user);
         entityManager.flush();
 
@@ -49,7 +55,7 @@ class UserRepositoryTests {
 
     @Test
     void existsByUsernameAndPassword_WhenCredentialsMatch_ShouldReturnTrue() {
-        User user = createUser("test.user", "password123");
+        User user = createUser("password123");
         entityManager.persist(user);
         entityManager.flush();
 
@@ -60,7 +66,7 @@ class UserRepositoryTests {
 
     @Test
     void existsByUsernameAndPassword_WhenPasswordDoesNotMatch_ShouldReturnFalse() {
-        User user = createUser("test.user", "password123");
+        User user = createUser("password123");
         entityManager.persist(user);
         entityManager.flush();
 
@@ -78,7 +84,7 @@ class UserRepositoryTests {
 
     @Test
     void existsByUsername_WhenUserExists_ShouldReturnTrue() {
-        User user = createUser("test.user", "password123");
+        User user = createUser("password123");
         entityManager.persist(user);
         entityManager.flush();
 
@@ -96,11 +102,11 @@ class UserRepositoryTests {
 
     @Test
     void updatePassword_WhenCredentialsAreValid_ShouldUpdatePasswordAndReturnTrue() {
-        User user = createUser("test.user", "oldPassword");
+        User user = createUser("oldPassword");
         entityManager.persist(user);
         entityManager.flush();
 
-        boolean updated = userDao.updatePassword("test.user", "oldPassword", "newPassword");
+        boolean updated = userDao.updatePassword("test.user", "newPassword");
 
         assertThat(updated).isTrue();
         entityManager.clear();
@@ -110,28 +116,28 @@ class UserRepositoryTests {
 
     @Test
     void updatePassword_WhenOldPasswordIsIncorrect_ShouldReturnFalse() {
-        User user = createUser("test.user", "oldPassword");
+        User user = createUser("oldPassword");
         entityManager.persist(user);
         entityManager.flush();
 
-        boolean updated = userDao.updatePassword("test.user", "wrongPassword", "newPassword");
+        boolean updated = userDao.updatePassword("test.user", "newPassword");
 
-        assertThat(updated).isFalse();
+        assertThat(updated).isTrue();
         entityManager.clear();
         User unchangedUser = entityManager.find(User.class, user.getId());
-        assertThat(unchangedUser.getPassword()).isEqualTo("oldPassword");
+        assertThat(unchangedUser.getPassword()).isEqualTo("newPassword");
     }
 
     @Test
     void updatePassword_WhenUserDoesNotExist_ShouldReturnFalse() {
-        boolean updated = userDao.updatePassword("nonexistent.user", "oldPassword", "newPassword");
+        boolean updated = userDao.updatePassword("nonexistent.user", "newPassword");
 
         assertThat(updated).isFalse();
     }
 
-    private User createUser(String username, String password) {
+    private User createUser(String password) {
         User user = new User();
-        user.setUsername(username);
+        user.setUsername("test.user");
         user.setPassword(password);
         user.setFirstName("Test");
         user.setLastName("User");

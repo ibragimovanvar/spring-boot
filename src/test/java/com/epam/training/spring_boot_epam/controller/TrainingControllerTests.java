@@ -1,85 +1,100 @@
 package com.epam.training.spring_boot_epam.controller;
 
-import com.epam.training.spring_boot_epam.dto.TrainingDTO;
+import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
+import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
+import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
-import com.epam.training.spring_boot_epam.dto.response.TraineeFilterResponseDTO;
-import com.epam.training.spring_boot_epam.dto.response.TrainerFilterResponseDTO;
-import com.epam.training.spring_boot_epam.service.TrainingService;
+import com.epam.training.spring_boot_epam.service.TraineeService;
+import com.epam.training.spring_boot_epam.service.TrainerService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TrainingController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@DisplayName("Integration tests for TrainingController API endpoints")
+@Tag("Training")
 class TrainingControllerTests {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private TrainingService trainingService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private TrainingDTO trainingDTO;
+    private String token;
+
+    @Autowired
+    private TrainerService trainerService;
+
+    @Autowired
+    private TraineeService traineeService;
+
+    private String traineeUsername;
+    private String traineePassword;
+    private String trainerUsername;
+    private String trainerPassword;
+
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        if (traineeUsername == null || traineePassword == null) {
+            ApiResponse<AuthDTO> profile = traineeService.createProfile(new TraineeCreateDTO("Test", "User", "123", LocalDate.now()));
+            this.traineePassword = profile.getData().getPassword();
+            this.traineeUsername = profile.getData().getUsername();
+        }
+        if (trainerUsername == null || trainerPassword == null || token == null) {
+            ApiResponse<AuthDTO> profile = trainerService.createProfile(new TrainerCreateDTO("Test", "User", 2L));
+            this.trainerPassword = profile.getData().getPassword();
+            this.trainerUsername = profile.getData().getUsername();
+        }
 
-        trainingDTO = new TrainingDTO();
-        trainingDTO.setTraineeUsername("john_doe");
-        trainingDTO.setTrainerUsername("jane_smith");
-        trainingDTO.setTrainingName("Morning Yoga");
-        trainingDTO.setTrainingDateTime(LocalDateTime.of(2023, 10, 1, 9, 0));
-        trainingDTO.setTrainingDurationInMinutes(1);
+        String baseAuthUrl = "/v1/auth";
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(baseAuthUrl + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                String.format("{\"username\": \"%s\", \"password\": \"%s\"}", trainerUsername, trainerPassword)
+                        ))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
 
-        TraineeFilterResponseDTO traineeResponseDTO = new TraineeFilterResponseDTO();
-        traineeResponseDTO.setId(1L);
-        traineeResponseDTO.setTrainingName("Morning Yoga");
-        traineeResponseDTO.setTrainingDateTime(LocalDateTime.of(2023, 10, 1, 9, 0));
-        traineeResponseDTO.setTrainingDurationInHours(1);
-        traineeResponseDTO.setTrainerFirstname("Jane");
-        traineeResponseDTO.setTrainingType("Yoga");
-
-        TrainerFilterResponseDTO trainerResponseDTO = new TrainerFilterResponseDTO();
-        trainerResponseDTO.setId(1L);
-        trainerResponseDTO.setTrainingName("Morning Yoga");
-        trainerResponseDTO.setTrainingDateTime(LocalDateTime.of(2023, 10, 1, 9, 0));
-        trainerResponseDTO.setTrainingDurationInHours(1);
-        trainerResponseDTO.setTraineeFirstname("John");
-        trainerResponseDTO.setTrainingType("Yoga");
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        token = jsonNode.get("data").get("token").asText();
     }
 
     @Test
     void createTraining_WhenValid_ShouldReturnCreated() throws Exception {
-        ApiResponse<Void> response = new ApiResponse<>(true, null, null);
-        when(trainingService.addTraining(any(TrainingDTO.class))).thenReturn(response);
+        String requestBody = String.format(
+                "{ \"trainerUsername\": \"%s\", \"traineeUsername\": \"%s\", \"trainingName\": \"%s\", " +
+                        "\"trainingDateTime\": \"%s\", \"trainingDurationInMinutes\": %d }",
+                trainerUsername, traineeUsername, "new trainingName", "2024-02-25 00:00", 30);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/v1/trainings")
+        String baseTrainingUrl = "/v1/trainings";
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                        .post(String.format(baseTrainingUrl))
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(trainingDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").isEmpty())
-                .andExpect(jsonPath("$.data").isEmpty());
+                        .content(requestBody))
+                .andExpect(status().is2xxSuccessful())
+                .andReturn();
 
-        verify(trainingService, times(1)).addTraining(any(TrainingDTO.class));
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        Boolean resultStatus = jsonNode.get("success").asBoolean();
+
+        Assertions.assertEquals(true, resultStatus);
     }
 }

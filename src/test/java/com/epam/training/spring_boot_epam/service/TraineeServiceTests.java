@@ -12,15 +12,19 @@ import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
 import com.epam.training.spring_boot_epam.exception.DomainException;
+import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
 import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.service.impl.TraineeServiceImpl;
+
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import com.epam.training.spring_boot_epam.util.DomainUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +58,9 @@ class TraineeServiceTests {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private DomainUtils domainUtils;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -92,11 +99,11 @@ class TraineeServiceTests {
 
     @Test
     void getProfile_WhenTraineeExists_ShouldReturnTraineeDTO() {
+        when(domainUtils.getCurrentUser()).thenReturn(user);
         when(traineeDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee));
         TraineeDTO traineeDTO = new TraineeDTO();
         traineeDTO.setFirstName("john_doe");
         when(traineeMapper.toDto(trainee)).thenReturn(traineeDTO);
-        when(traineeDao.findAllTraineeTrainers(1L)).thenReturn(Collections.emptyList());
 
         ApiResponse<TraineeDTO> response = traineeService.getProfile("john_doe");
 
@@ -108,6 +115,7 @@ class TraineeServiceTests {
 
     @Test
     void getProfile_WhenTraineeDoesNotExist_ShouldThrowDomainException() {
+        when(domainUtils.getCurrentUser()).thenReturn(user);
         when(traineeDao.findByUsername("unknown")).thenReturn(Optional.empty());
 
         DomainException exception = assertThrows(DomainException.class, () -> traineeService.getProfile("unknown"));
@@ -127,9 +135,9 @@ class TraineeServiceTests {
     void checkAuthProfile_WithUsername_WhenInvalid_ShouldThrowDomainException() {
         when(traineeDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee));
 
-        DomainException exception = assertThrows(DomainException.class,
+        ForbiddenException exception = assertThrows(ForbiddenException.class,
                 () -> traineeService.checkAuthProfile("john_doe", "wrongpassword", "john_doe"));
-        assertThat(exception.getMessage()).isEqualTo("Invalid username or password");
+        assertThat(exception.getMessage()).isEqualTo("You dont have permission to access this trainee");
     }
 
     @Test
@@ -142,12 +150,12 @@ class TraineeServiceTests {
     }
 
     @Test
-    void checkAuthProfile_WithId_WhenInvalid_ShouldThrowDomainException() {
+    void checkAuthProfile_WithId_WhenInvalid_ShouldThrowForbiddenException() {
         when(traineeDao.findById(1L)).thenReturn(Optional.of(trainee));
 
-        DomainException exception = assertThrows(DomainException.class,
+        ForbiddenException exception = assertThrows(ForbiddenException.class,
                 () -> traineeService.checkAuthProfile("john_doe", "wrongpassword", 1L));
-        assertThat(exception.getMessage()).isEqualTo("Invalid username or password");
+        assertThat(exception.getMessage()).isEqualTo("You dont have permission to access this trainee");
     }
 
     @Test
@@ -159,7 +167,6 @@ class TraineeServiceTests {
         dto.setAddress("456 Elm St");
         dto.setBirthDate(LocalDate.of(1990, 1, 1));
 
-        when(traineeDao.existsById(1L)).thenReturn(true);
         when(traineeDao.findById(1L)).thenReturn(Optional.of(trainee));
         when(traineeDao.findAllTraineeTrainers(1L)).thenReturn(Collections.emptyList());
         when(traineeMapper.toDto(trainee)).thenReturn(dto);
@@ -174,8 +181,6 @@ class TraineeServiceTests {
 
     @Test
     void updateProfile_WhenTraineeDoesNotExist_ShouldThrowDomainException() {
-        when(traineeDao.existsById(1L)).thenReturn(false);
-
         TraineeDTO dto = new TraineeDTO();
         DomainException exception = assertThrows(DomainException.class, () -> traineeService.updateProfile(dto, 1L));
         assertThat(exception.getMessage()).isEqualTo("Trainee not found: 1");

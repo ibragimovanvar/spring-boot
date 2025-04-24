@@ -11,5 +11,5 @@ public interface UserDao {
     User save(User user);
     boolean existsByUsernameAndPassword(String username, String password);
     boolean existsByUsername(String username);
-    boolean updatePassword(String username, String oldPassword, String newPassword);
+    boolean updatePassword(String username, String newPassword);
 }
