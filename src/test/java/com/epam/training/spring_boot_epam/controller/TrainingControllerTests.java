@@ -1,9 +1,11 @@
 package com.epam.training.spring_boot_epam.controller;
 
+import com.epam.training.spring_boot_epam.domain.TrainingType;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TraineeCreateDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import com.epam.training.spring_boot_epam.repository.TrainingTypeDao;
 import com.epam.training.spring_boot_epam.service.TraineeService;
 import com.epam.training.spring_boot_epam.service.TrainerService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,12 +14,17 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("Integration tests for TrainingController API endpoints")
 @Tag("Training")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TrainingControllerTests {
 
     @Autowired
@@ -46,6 +54,21 @@ class TrainingControllerTests {
     private String trainerUsername;
     private String trainerPassword;
 
+    @Autowired
+    private TrainingTypeDao trainingTypeDao;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @BeforeAll
+    void init() throws Exception {
+        List<TrainingType> trainingTypes = trainingTypeDao.findAll();
+        if (trainingTypes.isEmpty()) {
+            try (Connection connection = dataSource.getConnection()) {
+                ScriptUtils.executeSqlScript(connection, new ClassPathResource("import/initial.sql"));
+            }
+        }
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -80,7 +103,7 @@ class TrainingControllerTests {
         String requestBody = String.format(
                 "{ \"trainerUsername\": \"%s\", \"traineeUsername\": \"%s\", \"trainingName\": \"%s\", " +
                         "\"trainingDateTime\": \"%s\", \"trainingDurationInMinutes\": %d }",
-                trainerUsername, traineeUsername, "new trainingName", "2024-02-25 00:00", 30);
+                trainerUsername, traineeUsername, "new trainingName", "2026-02-25 00:00", 30);
 
         String baseTrainingUrl = "/v1/trainings";
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders

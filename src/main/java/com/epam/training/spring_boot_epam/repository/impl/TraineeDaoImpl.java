@@ -1,35 +1,34 @@
 package com.epam.training.spring_boot_epam.repository.impl;
 
-import com.epam.training.spring_boot_epam.domain.TrainingType;
 import com.epam.training.spring_boot_epam.domain.Trainer;
 import com.epam.training.spring_boot_epam.domain.Training;
 import com.epam.training.spring_boot_epam.domain.Trainee;
-import com.epam.training.spring_boot_epam.domain.User;
 import com.epam.training.spring_boot_epam.repository.TraineeDao;
+import com.epam.training.spring_boot_epam.repository.jpa.TraineeJpaRepository;
+import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 
 
 @Repository
 @Transactional
 public class TraineeDaoImpl implements TraineeDao {
 
+    private final TraineeJpaRepository traineeJpaRepository;
     @PersistenceContext
     private EntityManager entityManager;
+
+    public TraineeDaoImpl(TraineeJpaRepository traineeJpaRepository) {
+        this.traineeJpaRepository = traineeJpaRepository;
+    }
 
     @Override
     @Transactional(readOnly = false)
@@ -63,23 +62,33 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = false)
     public void deleteByUsername(String username) {
+        Trainee trainee = findByUsername(username).get();
+
+        for (Training training : trainee.getTrainings()) {
+            entityManager.createNativeQuery(
+                    "DELETE FROM trainers_trainings WHERE trainings_id = ?"
+            ).setParameter(1, training.getId()).executeUpdate();
+        }
+
+        entityManager.createNativeQuery(
+                "DELETE FROM trainers_trainees WHERE trainees_user_id IN (SELECT t.user_id FROM trainees t JOIN app_users u ON t.user_id = u.id WHERE u.username = ?)"
+        ).setParameter(1, username).executeUpdate();
+
+        entityManager.createNativeQuery(
+                "DELETE FROM trainees_trainings WHERE trainee_user_id IN (SELECT t.user_id FROM trainees t JOIN app_users u ON t.user_id = u.id WHERE u.username = ?)"
+        ).setParameter(1, username).executeUpdate();
+
         entityManager.createNativeQuery(
                 "DELETE FROM trainings WHERE trainee_id IN (SELECT t.user_id FROM trainees t JOIN app_users u ON t.user_id = u.id WHERE u.username = ?)"
         ).setParameter(1, username).executeUpdate();
 
         entityManager.createNativeQuery(
-                "DELETE FROM trainees_trainers WHERE trainee_user_id IN (SELECT t.user_id FROM trainees t JOIN app_users u ON t.user_id = u.id WHERE u.username = ?)"
+                "DELETE FROM jwt_tokens WHERE username = ?"
         ).setParameter(1, username).executeUpdate();
 
-        entityManager.createNativeQuery(
-                "DELETE FROM trainees WHERE user_id IN (SELECT id FROM app_users WHERE username = ?)"
-        ).setParameter(1, username).executeUpdate();
 
-        entityManager.createNativeQuery(
-                "DELETE FROM app_users WHERE username = ?"
-        ).setParameter(1, username).executeUpdate();
+        traineeJpaRepository.delete(trainee);
     }
 
     @Override
@@ -90,10 +99,21 @@ public class TraineeDaoImpl implements TraineeDao {
 
     @Override
     public List<Trainer> findAllTraineeTrainers(Long traineeId) {
-        return entityManager.createQuery(
+        List<Trainer> trainingTrainers = entityManager.createQuery(
                         "SELECT DISTINCT tr.trainer FROM Training tr WHERE tr.trainee.id = :id", Trainer.class)
                 .setParameter("id", traineeId)
                 .getResultList();
+
+        List<Trainer> trainerTrainers = entityManager.createQuery(
+                        "SELECT DISTINCT tr.trainers FROM Trainee tr WHERE tr.id = :id", Trainer.class)
+                .setParameter("id", traineeId)
+                .getResultList();
+
+        List<Trainer> trainers = new ArrayList<>();
+        trainers.addAll(trainingTrainers);
+        trainers.addAll(trainerTrainers);
+
+        return trainers;
     }
 
     @Override
@@ -111,35 +131,35 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public List<Training> findTraineeTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate,
+    public List<Training> findTraineeTrainings(String username, String trainerUsername, LocalDateTime fromDate, LocalDateTime toDate,
                                                String trainerName, String trainingType) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Training> cq = cb.createQuery(Training.class);
-        Root<Training> root = cq.from(Training.class);
-        Join<Training, Trainee> traineeJoin = root.join("trainee");
-        Join<Trainee, User> traineeUserJoin = traineeJoin.join("user");
-        Join<Training, Trainer> trainerJoin = root.join("trainer");
-        Join<Trainer, User> trainerUserJoin = trainerJoin.join("user");
-        Join<Training, TrainingType> typeJoin = root.join("trainingType");
-
-        List<Predicate> predicates = new ArrayList<>();
-        predicates.add(cb.equal(traineeUserJoin.get("username"), username));
+        StringBuilder jpql = new StringBuilder("""
+                    SELECT t FROM Training t
+                    WHERE t.trainee.user.username = :username
+                """);
 
         if (fromDate != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("trainingDateTime"), fromDate));
+            jpql.append(" AND t.trainingDateTime >= :fromDate");
         }
         if (toDate != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("trainingDateTime"), toDate));
+            jpql.append(" AND t.trainingDateTime <= :toDate");
         }
         if (trainerName != null && !trainerName.isEmpty()) {
-            predicates.add(cb.like(cb.lower(trainerUserJoin.get("firstName")), "%" + trainerName.toLowerCase() + "%"));
+            jpql.append(" AND LOWER(t.trainer.user.firstName) LIKE :trainerName");
         }
         if (trainingType != null && !trainingType.isEmpty()) {
-            predicates.add(cb.equal(typeJoin.get("trainingTypeName"), trainingType));
+            jpql.append(" AND t.trainingType.trainingTypeName = :trainingType");
         }
 
-        cq.select(root).where(predicates.toArray(new Predicate[0]));
-        return entityManager.createQuery(cq).getResultList();
+        TypedQuery<Training> query = entityManager.createQuery(jpql.toString(), Training.class);
+        query.setParameter("username", username);
+        if (fromDate != null) query.setParameter("fromDate", fromDate);
+        if (toDate != null) query.setParameter("toDate", toDate);
+        if (trainerName != null && !trainerName.isEmpty())
+            query.setParameter("trainerName", "%" + trainerName.toLowerCase() + "%");
+        if (trainingType != null && !trainingType.isEmpty()) query.setParameter("trainingType", trainingType);
+
+        return query.getResultList();
     }
 
     @Override

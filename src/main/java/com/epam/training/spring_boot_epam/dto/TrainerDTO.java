@@ -28,6 +28,8 @@ public class TrainerDTO {
     @NotNull(message = "Please select training type")
     private Long trainingTypeId;
 
+    private TrainingTypeDTO trainingType;
+
     @NotNull(message = "Please select active/inactive")
     private Boolean active;
 

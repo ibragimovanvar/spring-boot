@@ -63,9 +63,7 @@ public class TrainingServiceImpl implements TrainingService {
     public ApiResponse<List<TraineeFilterResponseDTO>> getTraineeTrainings(TraineeTrainingsFilter filter) {
         LOGGER.info("Request to get trainings for trainee with username: {}", filter);
 
-        checkAuthProfile(filter.getUsername());
-
-        List<Training> traineeTrainings = traineeDao.findTraineeTrainings(filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTrainerFirstname(), filter.getTrainingTypeName());
+        List<Training> traineeTrainings = traineeDao.findTraineeTrainings(filter.getUsername(), domainUtils.getCurrentUser().getUsername(), filter.getFrom(), filter.getTo(), filter.getTrainerFirstname(), filter.getTrainingTypeName());
 
         List<TraineeFilterResponseDTO> filterResponseDTOS = traineeTrainings
                 .stream()
@@ -87,9 +85,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     public ApiResponse<List<TrainerFilterResponseDTO>> getTrainerTrainings(TrainerTrainingsFilter filter) {
         LOGGER.info("Request to get trainings for trainer with username: {}", filter);
-        List<Training> trainerTrainings = trainerDao.findTrainerTrainings(filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTraineeFirstname());
-
-        checkAuthProfile(filter.getUsername());
+        List<Training> trainerTrainings = trainerDao.findTrainerTrainings(domainUtils.getCurrentUser().getUsername(), filter.getUsername(), filter.getFrom(), filter.getTo(), filter.getTraineeFirstname());
 
         List<TrainerFilterResponseDTO> filterResponseDTOS = trainerTrainings
                 .stream()
@@ -123,6 +119,7 @@ public class TrainingServiceImpl implements TrainingService {
 
         training.setTrainer(trainer);
         training.setTrainee(trainee);
+        training.setTrainingType(trainer.getSpecialization());
 
         training = trainingDao.save(training);
 

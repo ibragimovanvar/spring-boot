@@ -11,6 +11,7 @@ import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
+import com.epam.training.spring_boot_epam.mapper.TrainingTypeMapper;
 import com.epam.training.spring_boot_epam.repository.TrainerDao;
 import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.service.TrainerService;
@@ -42,6 +43,7 @@ public class TrainerServiceImpl implements TrainerService {
     private final UserDao userDao;
     private final TraineeMapper traineeMapper;
     private final PasswordEncoder passwordEncoder;
+    private final TrainingTypeMapper trainingTypeMapper;
 
     @Transactional
     @Override
@@ -94,7 +96,7 @@ public class TrainerServiceImpl implements TrainerService {
         TrainerDTO dto = trainerMapper.toDto(trainer);
 
         dto.setTraineeList(getTraineesTrainer(trainer.getId()));
-
+        dto.setTrainingType(trainingTypeMapper.toDto(trainer.getSpecialization()));
         return new ApiResponse<>(true, null, dto);
     }
 
@@ -131,7 +133,7 @@ public class TrainerServiceImpl implements TrainerService {
     public List<Training> getTrainerTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate, String traineeName) {
         LOGGER.info("Request to get trainings for {} with username: {}", ENTITY_NAME, username);
         requireAuthentication(username);
-        return trainerDao.findTrainerTrainings(username, fromDate, toDate, traineeName);
+        return trainerDao.findTrainerTrainings(domainUtils.getCurrentUser().getUsername(), username, fromDate, toDate, traineeName);
     }
 
     @Override

@@ -2,7 +2,6 @@ package com.epam.training.spring_boot_epam.security.service.impl;
 
 import com.epam.training.spring_boot_epam.domain.Token;
 import com.epam.training.spring_boot_epam.exception.AuthorizationException;
-import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.repository.TokenDao;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

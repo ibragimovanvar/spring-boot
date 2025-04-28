@@ -67,6 +67,7 @@ class TrainerRepositoryTests {
 
         List<Training> results = trainerDao.findTrainerTrainings(
                 "trainer.user",
+                "",
                 LocalDateTime.of(2023, 1, 1, 0, 0),
                 LocalDateTime.of(2023, 3, 1, 0, 0),
                 "trainee2"

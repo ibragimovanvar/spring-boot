@@ -12,28 +12,16 @@ import java.util.Optional;
 @Repository
 public interface TraineeDao {
     Trainee save(Trainee trainee);
-
     Optional<Trainee> findById(Long id);
-
     Optional<Trainee> findByUsername(String username);
-
     void update(Trainee trainee);
-
     void delete(Trainee trainee);
-
     void deleteByUsername(String username);
-
     List<Trainee> findAll();
     List<Trainer> findAllTraineeTrainers(Long id);
-
     boolean existsByUsername(String username);
-
     boolean existsById(Long id);
-
-    List<Training> findTraineeTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate,
-                                        String trainerName, String trainingType);
-
+    List<Training> findTraineeTrainings(String username, String trainerUsername, LocalDateTime fromDate, LocalDateTime toDate, String trainerName, String trainingType);
     List<Trainer> findAvailableTrainersForTrainee(String traineeUsername);
-
     void updateTraineeTrainers(String username, List<String> trainerUsernames);
 }

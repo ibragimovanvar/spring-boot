@@ -35,7 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -237,12 +237,14 @@ class TraineeServiceTests {
     @Test
     void getTraineeTrainings_ShouldReturnTrainings() {
         Training training = new Training();
-        when(traineeDao.findTraineeTrainings("john_doe", null, null, null, null)).thenReturn(List.of(training));
+
+        when(domainUtils.getCurrentUser()).thenReturn(trainee.getUser());
+        when(traineeDao.findTraineeTrainings(eq("john_doe"), anyString(), isNull(), isNull(), isNull(), isNull())).thenReturn(List.of(training));
 
         List<Training> trainings = traineeService.getTraineeTrainings("john_doe", null, null, null, null);
 
         assertThat(trainings).hasSize(1);
-        verify(traineeDao, times(1)).findTraineeTrainings("john_doe", null, null, null, null);
+        verify(traineeDao, times(1)).findTraineeTrainings("john_doe",  "john_doe", null, null, null, null);
     }
 
     @Test

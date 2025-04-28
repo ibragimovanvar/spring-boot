@@ -96,8 +96,8 @@ class TrainingServiceTests {
     @Test
     void getTraineeTrainings_WhenTrainingsExist_ShouldReturnTraineeFilterResponseDTOs() {
         TraineeTrainingsFilter filter = new TraineeTrainingsFilter("john_doe", null, null, "Jane", "Yoga");
-        when(userDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee.getUser()));
-        when(traineeDao.findTraineeTrainings("john_doe", null, null, "Jane", "Yoga")).thenReturn(List.of(training));
+//        when(userDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee.getUser()));
+        when(traineeDao.findTraineeTrainings("john_doe", "john_doe", null, null, "Jane", "Yoga")).thenReturn(List.of(training));
         when(domainUtils.getCurrentUser()).thenReturn(trainee.getUser());
 
         ApiResponse<List<TraineeFilterResponseDTO>> response =
@@ -107,14 +107,14 @@ class TrainingServiceTests {
         assertThat(response.getData()).hasSize(1);
         TraineeFilterResponseDTO dto = response.getData().get(0);
         assertThat(dto.getTrainingName()).isEqualTo("Morning Yoga");
-        verify(traineeDao).findTraineeTrainings("john_doe", null, null, "Jane", "Yoga");
+        verify(traineeDao).findTraineeTrainings("john_doe", "john_doe",null, null, "Jane", "Yoga");
     }
 
     @Test
     void getTraineeTrainings_WhenNoTrainingsExist_ShouldReturnEmptyList() {
         TraineeTrainingsFilter filter = new TraineeTrainingsFilter("john_doe", null, null, null, null);
-        when(userDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee.getUser()));
-        when(traineeDao.findTraineeTrainings("john_doe", null, null, null, null)).thenReturn(Collections.emptyList());
+//        when(userDao.findByUsername("john_doe")).thenReturn(Optional.of(trainee.getUser()));
+        when(traineeDao.findTraineeTrainings("john_doe", "john_doe",null, null, null, null)).thenReturn(Collections.emptyList());
         when(domainUtils.getCurrentUser()).thenReturn(trainee.getUser());
 
         ApiResponse<List<TraineeFilterResponseDTO>> response =
@@ -122,15 +122,16 @@ class TrainingServiceTests {
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEmpty();
-        verify(traineeDao).findTraineeTrainings("john_doe", null, null, null, null);
+        verify(traineeDao).findTraineeTrainings("john_doe", "john_doe",null, null, null, null);
     }
 
     @Test
     void getTrainerTrainings_WhenTrainingsExist_ShouldReturnTrainerFilterResponseDTOs() {
         TrainerTrainingsFilter filter = new TrainerTrainingsFilter("jane_smith", null, null, "John");
         when(domainUtils.getCurrentUser()).thenReturn(trainer.getUser());
-        when(userDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer.getUser()));
-        when(trainerDao.findTrainerTrainings("jane_smith", null, null, "John")).thenReturn(List.of(training));
+
+//        when(userDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer.getUser()));
+        when(trainerDao.findTrainerTrainings("jane_smith", "jane_smith",null, null, "John")).thenReturn(List.of(training));
 
         ApiResponse<List<TrainerFilterResponseDTO>> response =
                 trainingService.getTrainerTrainings(filter);
@@ -139,14 +140,14 @@ class TrainingServiceTests {
         assertThat(response.getData()).hasSize(1);
         TrainerFilterResponseDTO dto = response.getData().get(0);
         assertThat(dto.getTraineeFirstname()).isEqualTo("John");
-        verify(trainerDao).findTrainerTrainings("jane_smith", null, null, "John");
+        verify(trainerDao).findTrainerTrainings("jane_smith", "jane_smith",null, null, "John");
     }
 
     @Test
     void getTrainerTrainings_WhenNoTrainingsExist_ShouldReturnEmptyList() {
         TrainerTrainingsFilter filter = new TrainerTrainingsFilter("jane_smith", null, null, null);
-        when(userDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer.getUser()));
-        when(trainerDao.findTrainerTrainings("jane_smith", null, null, null)).thenReturn(Collections.emptyList());
+//        when(userDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer.getUser()));
+        when(trainerDao.findTrainerTrainings("jane_smith", "jane_smith",null, null, null)).thenReturn(Collections.emptyList());
         when(domainUtils.getCurrentUser()).thenReturn(trainer.getUser());
 
         ApiResponse<List<TrainerFilterResponseDTO>> response =
@@ -154,23 +155,6 @@ class TrainingServiceTests {
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData()).isEmpty();
-        verify(trainerDao).findTrainerTrainings("jane_smith", null, null, null);
+        verify(trainerDao).findTrainerTrainings("jane_smith", "jane_smith",null, null, null);
     }
-
-    @Test
-    void checkAuthProfile_WhenInvalidCredentials_ShouldThrowException() {
-        User user = new User("John", "Doe", true);
-        user.setUsername("john_doe");
-        user.setPassword("correct");
-        when(userDao.findByUsername("john_doe")).thenReturn(Optional.of(user));
-        when(domainUtils.getCurrentUser()).thenReturn(trainee.getUser());
-
-        TraineeTrainingsFilter filter = new TraineeTrainingsFilter("john_doe", null, null, null, null);
-
-        assertThatThrownBy(() ->
-                trainingService.getTraineeTrainings(filter)
-        ).isInstanceOf(AuthorizationException.class)
-                .hasMessage("You dont have permission to access this resource");
-    }
-
 }

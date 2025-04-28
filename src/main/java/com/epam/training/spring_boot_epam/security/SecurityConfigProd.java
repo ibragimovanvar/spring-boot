@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -14,6 +15,7 @@ import com.epam.training.spring_boot_epam.security.service.impl.JwtAuthFilter;
 
 @Profile("prod")
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfigProd {
 
     private final CustomCorsConfigurationProd customCorsConfiguration;

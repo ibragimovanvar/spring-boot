@@ -78,7 +78,7 @@ public class TrainerDaoImpl implements TrainerDao {
     }
 
     @Override
-    public List<Training> findTrainerTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate, String traineeName) {
+    public List<Training> findTrainerTrainings(String username, String traineeUsername, LocalDateTime fromDate, LocalDateTime toDate, String traineeName) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Training> cq = cb.createQuery(Training.class);
         Root<Training> root = cq.from(Training.class);
@@ -97,7 +97,7 @@ public class TrainerDaoImpl implements TrainerDao {
             predicates.add(cb.lessThanOrEqualTo(root.get("trainingDateTime"), toDate));
         }
         if (traineeName != null && !traineeName.isEmpty()) {
-            predicates.add(cb.like(cb.lower(traineeUserJoin.get("firstName")), "%" + traineeName.toLowerCase() + "%"));
+            predicates.add(cb.like(cb.lower(traineeUserJoin.get("username")), traineeUsername.toLowerCase()));
         }
 
         cq.select(root).where(predicates.toArray(new Predicate[0]));

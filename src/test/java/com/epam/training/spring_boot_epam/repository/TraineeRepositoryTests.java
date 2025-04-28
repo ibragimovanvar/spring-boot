@@ -143,6 +143,7 @@ class TraineeRepositoryTests {
 
         List<Training> result = traineeDao.findTraineeTrainings(
                 "trainee.user",
+                "",
                 LocalDateTime.of(2023, 1, 15, 0, 0),
                 LocalDateTime.of(2023, 2, 15, 0, 0),
                 null,

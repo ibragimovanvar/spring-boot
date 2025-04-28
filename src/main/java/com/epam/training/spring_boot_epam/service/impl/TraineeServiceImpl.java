@@ -203,7 +203,7 @@ public class TraineeServiceImpl implements TraineeService {
                                               String trainerName, String trainingType) {
         LOGGER.info("Request to get trainings for {} with username: {}", ENTITY_NAME, username);
 
-        return traineeDao.findTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
+        return traineeDao.findTraineeTrainings(username, domainUtils.getCurrentUser().getUsername(), fromDate, toDate, trainerName, trainingType);
     }
 
     public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {

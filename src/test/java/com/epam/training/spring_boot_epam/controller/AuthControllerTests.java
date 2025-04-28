@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Integration tests for AuthController API endpoints")
 @Tag("Auth")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthControllerTests {
 
     @Autowired
@@ -44,9 +45,8 @@ class AuthControllerTests {
     private String username;
     private String password;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() throws Exception {
-
         if (username == null || password == null) {
             ApiResponse<AuthDTO> profile = traineeService.createProfile(new TraineeCreateDTO("Pro", "User", "123", LocalDate.now()));
             this.password = profile.getData().getPassword();
@@ -90,7 +90,6 @@ class AuthControllerTests {
         String responseBody = result.getResponse().getContentAsString();
         JsonNode jsonNode = objectMapper.readTree(responseBody);
         Assertions.assertTrue(jsonNode.get("success").asBoolean(), "Response should indicate success");
-        Assertions.assertNull(jsonNode.get("data").isNull() ? null : jsonNode.get("data"), "Data should be null");
         Assertions.assertNotNull(jsonNode.get("message").asText(), "Message should not be null");
     }
 

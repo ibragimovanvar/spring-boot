@@ -1,8 +1,10 @@
 package com.epam.training.spring_boot_epam.controller;
 
+import com.epam.training.spring_boot_epam.domain.TrainingType;
 import com.epam.training.spring_boot_epam.dto.request.AuthDTO;
 import com.epam.training.spring_boot_epam.dto.request.TrainerCreateDTO;
 import com.epam.training.spring_boot_epam.dto.response.ApiResponse;
+import com.epam.training.spring_boot_epam.repository.TrainingTypeDao;
 import com.epam.training.spring_boot_epam.service.TrainerService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,10 +12,16 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("Integration tests for TrainerController API endpoints")
 @Tag("Trainers")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TrainerControllerTests {
 
     @Autowired
@@ -38,9 +47,21 @@ class TrainerControllerTests {
     private String username;
     private String password;
 
+    @Autowired
+    private TrainingTypeDao trainingTypeDao;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    @Autowired
+    private DataSource dataSource;
+
+    @BeforeAll
+    void init() throws Exception {
+        List<TrainingType> trainingTypes = trainingTypeDao.findAll();
+        if (trainingTypes.isEmpty()) {
+            try (Connection connection = dataSource.getConnection()) {
+                ScriptUtils.executeSqlScript(connection, new ClassPathResource("import/initial.sql"));
+            }
+        }
+
         if (username == null || password == null || token == null) {
             ApiResponse<AuthDTO> profile = trainerService.createProfile(new TrainerCreateDTO("Test", "User", 2L));
             this.password = profile.getData().getPassword();
@@ -65,7 +86,7 @@ class TrainerControllerTests {
     @Test
     void getTrainerTrainings_WhenValid_ShouldReturnOk() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .get(String.format(baseTrainerUrl + "/%s/trainings", username))
+                        .get(String.format(baseTrainerUrl + "/trainings"))
                         .header("Authorization", "Bearer " + token)
                         .content(String.format("{\"username\": \"%s\"}", username))
                         .contentType(MediaType.APPLICATION_JSON))
@@ -118,7 +139,7 @@ class TrainerControllerTests {
         mockMvc.perform(MockMvcRequestBuilders
                         .get(String.format(baseTrainerUrl + "/%s", username))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andReturn();
     }
 

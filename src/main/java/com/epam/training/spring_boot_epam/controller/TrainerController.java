@@ -13,6 +13,7 @@ import com.epam.training.spring_boot_epam.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,13 +51,9 @@ public class TrainerController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/{username}/trainings")
-    public ResponseEntity<ApiResponse<List<TrainerFilterResponseDTO>>> getTrainerTrainings(@PathVariable String username, @Valid @RequestBody TrainerTrainingsFilter filter){
-        if(username == null || username.isBlank()){
-            return new ResponseEntity<>(new ApiResponse<>(false, "Missing username", null), HttpStatus.BAD_REQUEST);
-        }
-
-        filter.setUsername(username);
+    @PreAuthorize("hasRole('TRAINER')")
+    @GetMapping("/trainings")
+    public ResponseEntity<ApiResponse<List<TrainerFilterResponseDTO>>> getTrainerTrainings(@Valid @RequestBody TrainerTrainingsFilter filter){
         ApiResponse<List<TrainerFilterResponseDTO>> response = trainingService.getTrainerTrainings(filter);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

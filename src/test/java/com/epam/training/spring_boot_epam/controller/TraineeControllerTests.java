@@ -23,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("Integration tests for TraineeController API endpoints")
 @Tag("Trainees")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TraineeControllerTests {
 
     @Autowired
@@ -40,7 +42,7 @@ class TraineeControllerTests {
     private String username;
     private String password;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() throws Exception {
         if (username == null || password == null || token == null) {
             ApiResponse<AuthDTO> profile = traineeService.createProfile(new TraineeCreateDTO("Test", "User", "123", LocalDate.now()));
@@ -65,9 +67,10 @@ class TraineeControllerTests {
 
 
     @Test
+    @Order(1)
     void getTraineeTrainings_WhenValid_ShouldReturnOk() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .get(String.format(baseTraineeUrl + "/%s/trainings", username))
+                        .get(String.format(baseTraineeUrl + "/trainings"))
                         .header("Authorization", "Bearer " + token)
                         .content(String.format("{\"username\": \"%s\"}", username))
                         .contentType(MediaType.APPLICATION_JSON))
@@ -83,6 +86,7 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(2)
     void createTrainee_WhenValid_ShouldReturnCreated() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .post(String.format(baseTraineeUrl))
@@ -101,6 +105,7 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(3)
     void getTraineeByUsername_WhenAuthenticated_ShouldReturnOk() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .get(String.format(baseTraineeUrl + "/%s", username))
@@ -117,15 +122,17 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(4)
     void getTraineeByUsername_WhenNotAuthenticated_ShouldReturnForbidden() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders
                         .get(String.format(baseTraineeUrl + "/%s", username))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andReturn();
     }
 
     @Test
+    @Order(5)
     void updateTrainee_WhenAuthenticated_ShouldReturnAccepted() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .put(String.format(baseTraineeUrl))
@@ -149,6 +156,7 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(99)
     void deleteTrainee_WhenAuthenticated_ShouldReturnNoContent() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .delete(String.format(baseTraineeUrl + "/delete"))
@@ -166,6 +174,7 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(98)
     void activateOrDeactivate_WhenAuthenticated_ShouldReturnOk() throws Exception {
         boolean active = false;
 
@@ -186,6 +195,7 @@ class TraineeControllerTests {
     }
 
     @Test
+    @Order(6)
     void getNotAssignedActiveTrainers_WhenAuthenticated_ShouldReturnOk() throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .get(String.format(baseTraineeUrl + "/not-assigned"))

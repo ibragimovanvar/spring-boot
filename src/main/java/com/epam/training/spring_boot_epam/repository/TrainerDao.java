@@ -26,5 +26,5 @@ public interface TrainerDao {
 
     boolean existsByUsername(String username);
 
-    List<Training> findTrainerTrainings(String username, LocalDateTime fromDate, LocalDateTime toDate, String traineeName);
+    List<Training> findTrainerTrainings(String username, String traineeUsername, LocalDateTime fromDate, LocalDateTime toDate, String traineeName);
 }

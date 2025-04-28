@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 
 import jakarta.validation.Valid;
 import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,19 +49,15 @@ public class TraineeController {
 
     @GetMapping("/{username}")
     public ResponseEntity<ApiResponse<TraineeDTO>> getTraineeByUsername(@PathVariable String username) {
+        traineeService.checkAuthProfile(domainUtils.getCurrentUser().getUsername(), domainUtils.getCurrentUser().getPassword(), domainUtils.getCurrentUser().getId());
+
         ApiResponse<TraineeDTO> response = traineeService.getProfile(username);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/{username}/trainings")
-    public ResponseEntity<ApiResponse<List<TraineeFilterResponseDTO>>> getTraineeTrainings(@PathVariable String username, @Valid @RequestBody TraineeTrainingsFilter filter){
-        if(username == null || username.isBlank()){
-            return new ResponseEntity<>(new ApiResponse<>(false, "Missing username", null), HttpStatus.BAD_REQUEST);
-        }
-
-        filter.setUsername(username);
+    @GetMapping("/trainings")
+    public ResponseEntity<ApiResponse<List<TraineeFilterResponseDTO>>> getTraineeTrainings(@Valid @RequestBody TraineeTrainingsFilter filter){
         ApiResponse<List<TraineeFilterResponseDTO>> response = trainingService.getTraineeTrainings(filter);
-
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

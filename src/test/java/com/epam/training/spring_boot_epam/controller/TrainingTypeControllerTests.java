@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DisplayName("Integration tests for TrainingTypeController API endpoints")
 @Tag("Training Types")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TrainingTypeControllerTests {
     @Autowired
     private MockMvc mockMvc;
@@ -38,7 +39,7 @@ class TrainingTypeControllerTests {
     private String username;
     private String password;
 
-    @BeforeEach
+    @BeforeAll
     void setUp() throws Exception {
         if (username == null || password == null || token == null) {
             ApiResponse<AuthDTO> profile = traineeService.createProfile(new TraineeCreateDTO("Test", "User", "123", LocalDate.now()));

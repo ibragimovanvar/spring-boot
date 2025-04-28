@@ -13,6 +13,7 @@ import com.epam.training.spring_boot_epam.exception.DomainException;
 import com.epam.training.spring_boot_epam.exception.ForbiddenException;
 import com.epam.training.spring_boot_epam.mapper.TraineeMapper;
 import com.epam.training.spring_boot_epam.mapper.TrainerMapper;
+import com.epam.training.spring_boot_epam.mapper.TrainingTypeMapper;
 import com.epam.training.spring_boot_epam.repository.TrainerDao;
 import com.epam.training.spring_boot_epam.repository.UserDao;
 import com.epam.training.spring_boot_epam.service.impl.TrainerServiceImpl;
@@ -56,6 +57,9 @@ class TrainerServiceTests {
 
     @Mock
     private TraineeMapper traineeMapper;
+
+    @Mock
+    private TrainingTypeMapper trainingTypeMapper;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -238,13 +242,15 @@ class TrainerServiceTests {
     @Test
     void getTrainerTrainings_WhenAuthenticated_ShouldReturnTrainings() {
         Training training = new Training();
+        when(domainUtils.getCurrentUser()).thenReturn(trainer.getUser());
+
         when(trainerDao.findByUsername("jane_smith")).thenReturn(Optional.of(trainer));
-        when(trainerDao.findTrainerTrainings("jane_smith", null, null, null)).thenReturn(List.of(training));
+        when(trainerDao.findTrainerTrainings("jane_smith", "jane_smith", null, null, null)).thenReturn(List.of(training));
 
         List<Training> trainings = trainerService.getTrainerTrainings("jane_smith", null, null, null);
 
         assertThat(trainings).hasSize(1);
-        verify(trainerDao, times(1)).findTrainerTrainings("jane_smith", null, null, null);
+        verify(trainerDao, times(1)).findTrainerTrainings("jane_smith", "jane_smith", null, null, null);
     }
 
     @Test
